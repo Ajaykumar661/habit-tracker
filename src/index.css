@@ -1,0 +1,432 @@
+/* ============================================================
+   TALLY WALL — 8-bit habit sentence tracker
+   ============================================================ */
+
+:root {
+  --bg: #0c0e0a;
+  --bg-deep: #070805;
+  --panel: #14170f;
+  --panel-alt: #1b1f15;
+  --wall: #101208;
+  --cream: #eae6d2;
+  --cream-dim: #9a967f;
+  --amber: #e0a458;
+  --amber-dim: #7a5a30;
+  --green: #8fae74;
+  --green-dim: #4d5e3d;
+  --red: #c1554b;
+  --red-dim: #6b2f29;
+  --border-dark: #050503;
+  --shadow-dark: #000000;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--cream);
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+body { line-height: 1.6; font-size: 11px; }
+
+::selection { background: var(--amber); color: var(--bg-deep); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--amber-dim); border: 2px solid var(--bg-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ============================================================
+   Pixel panel (modals / achievement popup)
+   ============================================================ */
+.pixel-panel {
+  background: var(--panel-alt);
+  border: 2px solid var(--border-dark);
+  box-shadow:
+    0 0 0 2px var(--amber),
+    0 0 0 4px var(--border-dark),
+    6px 6px 0 0 var(--shadow-dark);
+}
+
+.panel {
+  background: var(--panel);
+  border: 2px solid var(--border-dark);
+  box-shadow: 0 0 0 2px var(--cream-dim), 4px 4px 0 0 var(--shadow-dark);
+  padding: 14px;
+  position: relative;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.app { max-width: 1400px; margin: 0 auto; padding: 14px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--panel-alt);
+  border: 2px solid var(--border-dark);
+  box-shadow: 0 0 0 2px var(--amber-dim), 4px 4px 0 0 var(--shadow-dark);
+  margin-bottom: 16px;
+}
+.topbar-title { font-size: 14px; letter-spacing: 2px; color: var(--amber); text-shadow: 2px 2px 0 var(--shadow-dark); }
+.brand-bracket { color: var(--cream-dim); }
+.topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1.35fr) 230px;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel-title {
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 1px;
+  margin: 0 0 10px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--amber-dim);
+}
+.sidebar-divider {
+  height: 2px;
+  background: repeating-linear-gradient(to right, var(--cream-dim) 0, var(--cream-dim) 4px, transparent 4px, transparent 8px);
+  margin: 16px 0;
+  opacity: 0.5;
+}
+
+/* ---------- Sidebar ---------- */
+.routine-list { list-style: none; margin: 0 0 6px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.routine-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 8px; background: var(--panel-alt); border: 2px solid var(--border-dark);
+  cursor: pointer; font-size: 10px; color: var(--cream-dim);
+}
+.routine-item:hover { color: var(--cream); border-color: var(--amber-dim); }
+.routine-item.active { color: var(--bg-deep); background: var(--amber); border-color: var(--border-dark); box-shadow: 3px 3px 0 0 var(--shadow-dark); }
+.routine-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routine-delete-btn { background: none; border: none; color: inherit; opacity: 0.6; cursor: pointer; font-family: inherit; font-size: 11px; padding: 0 2px; }
+.routine-delete-btn:hover { opacity: 1; color: var(--red); }
+
+.case-file { font-size: 9.5px; color: var(--cream-dim); display: flex; flex-direction: column; gap: 8px; }
+.case-file .cf-row { display: flex; justify-content: space-between; gap: 8px; }
+.case-file .cf-value { color: var(--cream); text-align: right; }
+
+/* ============================================================
+   Wall panel (center column)
+   ============================================================ */
+.wall-panel { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ---------- The unified "wall unit": label + wall + streak + button ---------- */
+/* This is the visual centerpiece — one continuous pixel-bordered module so the
+   mark-today button reads as physically attached to the wall, not a separate
+   floating card. */
+.wall-unit {
+  background: var(--panel);
+  border: 2px solid var(--border-dark);
+  box-shadow: 0 0 0 3px var(--amber-dim), 7px 7px 0 0 var(--shadow-dark);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wall-unit-label {
+  text-align: center;
+  padding: 12px 14px 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+}
+.wall-unit-label .bracket { color: var(--amber); }
+
+/* ---------- Jail wall (the tally stage itself) ---------- */
+.jail-frame {
+  display: grid;
+  grid-template-columns: 22px 1fr 22px;
+  background: var(--wall);
+  min-height: 420px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.jail-frame::before {
+  /* dithered base texture */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.025) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.025) 75%),
+    linear-gradient(45deg, rgba(255,255,255,0.025) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.025) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  pointer-events: none;
+}
+.jail-frame::after {
+  /* faint crossed scratch marks — sells "scratched wall" without hurting legibility */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(112deg, rgba(234,230,210,0.03) 0px, rgba(234,230,210,0.03) 1px, transparent 1px, transparent 41px),
+    repeating-linear-gradient(24deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 57px);
+}
+.jail-bars {
+  background-repeat: repeat-x;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border-dark) 0px, var(--border-dark) 6px,
+    #2b2f22 6px, #2b2f22 9px,
+    var(--border-dark) 9px, var(--border-dark) 15px,
+    transparent 15px, transparent 22px
+  );
+  box-shadow: inset -2px 0 0 var(--shadow-dark);
+}
+
+.tally-stage-wrap {
+  padding: 28px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 620px;
+  position: relative;
+  z-index: 1;
+}
+.tally-stage { display: flex; flex-wrap: wrap; gap: 26px 30px; align-items: flex-end; min-height: 160px; }
+
+/* ---------- Empty state ---------- */
+.wall-empty-state { margin: auto; text-align: center; padding: 36px 16px; }
+.wall-empty-title { font-size: 15px; color: var(--cream-dim); letter-spacing: 2px; margin-bottom: 12px; }
+.wall-empty-sub { font-size: 9.5px; color: var(--amber-dim); letter-spacing: 1.5px; }
+.wall-empty-sub::after { content: '_'; animation: blinkCursor 1s steps(1, end) infinite; }
+@keyframes blinkCursor { 50% { opacity: 0; } }
+
+.tally-group { cursor: pointer; padding: 4px; border: 2px solid transparent; }
+.tally-group:hover { border-color: var(--amber-dim); background: rgba(224, 164, 88, 0.08); }
+.tally-group svg { display: block; overflow: visible; width: 190px; height: 146px; }
+
+.particle { position: fixed; pointer-events: none; z-index: 10000; box-shadow: 0 0 0 1px var(--shadow-dark); }
+
+/* ---------- previous (broken) sentences ---------- */
+.prev-sentences { margin-top: 10px; padding-top: 10px; border-top: 2px dashed var(--border-dark); display: flex; flex-direction: column; gap: 8px; }
+.prev-sentence-row { display: flex; align-items: center; gap: 10px; opacity: 0.5; filter: grayscale(0.4); }
+.prev-sentence-row:hover { opacity: 0.85; }
+.prev-sentence-label { font-size: 8.5px; color: var(--red); white-space: nowrap; letter-spacing: 0.5px; }
+.prev-sentence-tallies { display: flex; gap: 8px; flex-wrap: wrap; transform: scale(0.6); transform-origin: left center; }
+
+/* ---------- DAY N strip — sits inside the wall unit, right below the wall ---------- */
+.wall-stats-strip {
+  text-align: center;
+  padding: 12px 14px 2px;
+  border-top: 2px dashed var(--border-dark);
+}
+/* Deliberately smaller than before: the wall itself should read the streak
+   first — this is a confirmation, not the headline. */
+.day-counter { font-size: 34px; color: var(--amber); text-shadow: 2px 2px 0 var(--shadow-dark), 0 0 14px rgba(224,164,88,0.2); margin: 0; letter-spacing: 2px; }
+
+/* ---------- streak chips strip — sits below the button ---------- */
+.wall-chips-strip {
+  text-align: center;
+  padding: 14px 14px 16px;
+  border-top: 2px dashed var(--border-dark);
+}
+.streak-line-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.streak-chip {
+  background: var(--panel-alt); border: 2px solid var(--border-dark); box-shadow: 2px 2px 0 0 var(--shadow-dark);
+  padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 140px;
+}
+.streak-chip .chip-label { font-size: 8px; color: var(--cream-dim); letter-spacing: 1px; }
+.streak-chip .chip-value { font-size: 13px; color: var(--green); }
+.streak-chip.chip-amber .chip-value { color: var(--amber); }
+
+/* ---------- action buttons — attached footer of the wall unit ---------- */
+.wall-unit .wall-actions {
+  display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+  padding: 16px 14px; border-top: 2px dashed var(--border-dark); background: var(--panel-alt);
+}
+
+.pixel-btn {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--bg-deep);
+  background: var(--green);
+  border: none;
+  padding: 14px 22px;
+  cursor: pointer;
+  box-shadow: inset -3px -4px 0 0 var(--green-dim), inset 3px 3px 0 0 #c8dcb8, 3px 3px 0 0 var(--shadow-dark);
+  letter-spacing: 1px;
+}
+.pixel-btn:disabled { cursor: default; opacity: 0.7; }
+.pixel-btn-big { font-size: 13px; padding: 18px 28px; }
+.pixel-btn-small { background: var(--amber); box-shadow: inset -3px -4px 0 0 var(--amber-dim), inset 3px 3px 0 0 #f6dcb0, 3px 3px 0 0 var(--shadow-dark); padding: 8px 14px; font-size: 9.5px; }
+.pixel-btn-tiny { background: var(--amber); box-shadow: inset -2px -3px 0 0 var(--amber-dim), inset 2px 2px 0 0 #f6dcb0, 2px 2px 0 0 var(--shadow-dark); padding: 6px 10px; font-size: 10px; }
+.pixel-btn-danger { background: var(--red); box-shadow: inset -3px -4px 0 0 var(--red-dim), inset 3px 3px 0 0 #e2a49d, 3px 3px 0 0 var(--shadow-dark); }
+
+.btn-complete-state {
+  background: var(--panel-alt) !important;
+  color: var(--green) !important;
+  box-shadow: inset 0 0 0 2px var(--green-dim), 3px 3px 0 0 var(--shadow-dark) !important;
+  cursor: default !important;
+}
+
+/* ============================================================
+   Cell log (calendar + bars) — supporting history, de-emphasized
+   ============================================================ */
+.cell-log { display: flex; flex-direction: column; gap: 12px; padding-top: 2px; }
+.cell-log .panel-title { font-size: 10px; opacity: 0.85; }
+.cell-log-head { display: flex; align-items: center; justify-content: space-between; }
+
+.calendar-box { background: var(--panel-alt); border: 1px solid var(--border-dark); box-shadow: 2px 2px 0 0 var(--shadow-dark); padding: 10px; }
+.calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.calendar-label { font-size: 9px; color: var(--amber); letter-spacing: 1px; }
+.calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: var(--cream-dim); font-size: 7.5px; margin-bottom: 5px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-cell {
+  aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+  font-size: 7.5px; background: var(--wall); border: 1px solid var(--border-dark); color: var(--cream-dim);
+  cursor: default; position: relative;
+}
+.cal-cell.in-range { cursor: pointer; }
+.cal-cell.in-range:hover { border-color: var(--amber); }
+.cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+.cal-cell.future { color: #3a3d31; }
+.cal-cell.done { background: var(--green-dim); color: var(--cream); box-shadow: inset 0 0 0 1px var(--green); }
+.cal-cell.missed { background: rgba(193, 85, 75, 0.15); color: var(--red); }
+.cal-cell.today { outline: 2px solid var(--amber); outline-offset: -1px; }
+.cal-cell.start-day::after { content: ""; position: absolute; bottom: 1px; left: 1px; right: 1px; height: 2px; background: var(--amber); }
+
+.bar-log-title { font-size: 8.5px; color: var(--cream-dim); letter-spacing: 1px; margin: 0 0 6px 0; opacity: 0.85; }
+.bar-log-rows { display: flex; flex-direction: column; gap: 4px; }
+.bar-row { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 8px; font-size: 8px; }
+.bar-row .bar-day-label { color: var(--cream-dim); white-space: nowrap; }
+.bar-row .bar-track { background: var(--wall); border: 1px solid var(--border-dark); height: 10px; overflow: hidden; }
+.bar-row .bar-fill { height: 100%; background: repeating-linear-gradient(to right, var(--green) 0px, var(--green) 3px, var(--green-dim) 3px, var(--green-dim) 4px); }
+.bar-log-empty { color: var(--cream-dim); font-size: 9px; opacity: 0.7; }
+
+/* ============================================================
+   Stats panel
+   ============================================================ */
+.stats-list { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.stats-list .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stats-list dt { font-size: 8.5px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; }
+.stats-list dd { font-size: 12px; color: var(--amber); margin: 0; text-align: right; }
+
+.achievements-grid { display: flex; flex-direction: column; gap: 10px; }
+.achievement-badge {
+  position: relative;
+  display: flex; align-items: center; gap: 10px; padding: 8px;
+  background: var(--panel-alt); border: 2px solid var(--border-dark);
+  opacity: 0.55; filter: grayscale(1) brightness(0.75);
+}
+.achievement-badge.unlocked {
+  opacity: 1; filter: none;
+  border-color: var(--amber);
+  box-shadow: 2px 2px 0 0 var(--shadow-dark), inset 0 0 0 1px var(--amber-dim);
+}
+.achievement-text { display: flex; flex-direction: column; gap: 2px; }
+.achievement-title { font-size: 9px; color: var(--cream); }
+.achievement-days { font-size: 8px; color: var(--cream-dim); }
+.achievement-date { font-size: 7.5px; color: var(--green); letter-spacing: 0.5px; }
+.achievement-badge.unlocked .achievement-title { color: var(--amber); }
+
+.achievement-lock-badge {
+  position: absolute;
+  bottom: 3px; right: 3px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dark);
+  padding: 2px;
+  line-height: 0;
+}
+
+.pixel-icon { display: grid; grid-template-columns: repeat(8, 3px); grid-template-rows: repeat(8, 3px); flex-shrink: 0; }
+.pixel-icon span { width: 3px; height: 3px; }
+.pixel-icon span.on { background: var(--cream-dim); }
+.achievement-badge.unlocked .pixel-icon span.on { background: var(--amber); }
+.achievement-lock-badge .pixel-icon { grid-template-columns: repeat(8, 2px); grid-template-rows: repeat(8, 2px); }
+.achievement-lock-badge .pixel-icon span { width: 2px; height: 2px; }
+.achievement-lock-badge .pixel-icon span.on { background: var(--cream-dim); }
+
+/* ============================================================
+   Tooltip / modals / popovers
+   ============================================================ */
+.tooltip {
+  position: fixed; z-index: 10000; background: var(--cream); color: var(--bg-deep);
+  font-size: 8.5px; padding: 6px 8px; border: 2px solid var(--border-dark);
+  box-shadow: 2px 2px 0 0 var(--shadow-dark); pointer-events: none; letter-spacing: 0.5px; max-width: 160px;
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(4, 5, 3, 0.72);
+  display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;
+}
+.modal { min-width: 260px; max-width: 90vw; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.modal-title { font-size: 12px; color: var(--amber); letter-spacing: 1px; text-align: center; }
+.modal-body { font-size: 10px; color: var(--cream); line-height: 1.8; }
+.modal-actions { display: flex; justify-content: center; gap: 10px; }
+.field-label { display: block; font-size: 8.5px; color: var(--cream-dim); margin: 8px 0 4px; letter-spacing: 0.5px; }
+.pixel-input {
+  width: 100%; font-family: inherit; font-size: 10px; background: var(--wall); color: var(--cream);
+  border: 2px solid var(--border-dark); box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.5); padding: 8px;
+}
+.pixel-input:focus { outline: 2px solid var(--amber); }
+
+.group-date-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--border-dark); }
+.group-date-row:last-child { border-bottom: none; }
+
+/* ============================================================
+   Achievement popup
+   ============================================================ */
+.achievement-popup { position: fixed; top: 24px; left: 50%; z-index: 10001; }
+.achievement-popup-inner { padding: 16px 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 220px; }
+.achievement-popup-label { font-size: 8px; color: var(--red); letter-spacing: 1px; }
+.achievement-popup-title { font-size: 13px; color: var(--amber); text-align: center; }
+.achievement-popup-days { font-size: 9px; color: var(--cream-dim); }
+.achievement-icon-slot .pixel-icon span.on { background: var(--amber); }
+.achievement-icon-slot .pixel-icon { grid-template-columns: repeat(8, 5px); grid-template-rows: repeat(8, 5px); }
+.achievement-icon-slot .pixel-icon span { width: 5px; height: 5px; }
+
+/* ============================================================
+   Responsive: mobile reorder
+   wall unit (wall + streak + button) -> record -> cell log -> achievements
+   ============================================================ */
+@media (max-width: 900px) {
+  .layout { display: flex; flex-direction: column; }
+  .wall-panel { display: contents; }
+  .stats-panel { display: contents; }
+  [data-area="wall-unit"] { order: 1; }
+  [data-area="stats"] { order: 2; }
+  [data-area="cell-log"] { order: 3; }
+  [data-area="achievements"] { order: 4; }
+  .sidebar { order: 5; }
+  .panel { padding: 12px; }
+  .day-counter { font-size: 28px; }
+  .jail-frame { min-height: 320px; }
+  .tally-stage-wrap { max-height: 460px; padding: 20px 16px; }
+  .tally-stage { gap: 18px 20px; }
+  .tally-group svg { width: 150px; height: 115px; }
+}
+
+@media (max-width: 520px) {
+  :root { font-size: 15px; }
+  body { font-size: 10px; }
+  .topbar-title { font-size: 11px; }
+  .streak-chip { min-width: 110px; }
+  .day-counter { font-size: 24px; }
+  .tally-group svg { width: 118px; height: 91px; }
+  .tally-stage { gap: 14px 16px; }
+}

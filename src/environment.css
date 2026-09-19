@@ -1,0 +1,404 @@
+/* ============================================================
+   TALLY WALL — game view + HUD
+   ------------------------------------------------------------
+   The room is one illustration per time of day (public/assets/
+   environment, see src/data/assets.js). It is never altered here:
+   CSS only positions it, lights the wall, and lays the HUD around
+   it. Placement numbers come from hooks/useSceneLayout.js.
+   ============================================================ */
+
+:root {
+  --ink-outline:
+     1px 0 0 #120d08, -1px 0 0 #120d08, 0 1px 0 #120d08, 0 -1px 0 #120d08,
+     1px 1px 0 #120d08, -1px 1px 0 #120d08, 1px -1px 0 #120d08, -1px -1px 0 #120d08;
+  --chalk: #ece4cf;
+  --gold-text: #f2c46b;
+  --parchment: #d8c79a;
+  --parchment-ink: #3a2e1c;
+  --bronze: #8a6a3a;
+  /* localized HUD backings — translucent, so the room still reads through */
+  --hud-wood: rgba(26, 17, 9, 0.8);
+  --hud-iron: rgba(15, 16, 20, 0.8);
+  --hud-wood-edge: rgba(138, 106, 58, 0.8);
+  --hud-iron-edge: rgba(120, 122, 132, 0.6);
+}
+
+.app { max-width: none; padding: 0; margin: 0; }
+
+/* ============================================================
+   GAME VIEW — fixed, full viewport. The page scrolls the data view
+   up over it.
+   ============================================================ */
+.game-view {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #0b0907;
+}
+.game-shake { position: absolute; inset: 0; }
+
+/* Cover-scaled, wall-centred; left/top/width/height set inline from JS. */
+.scene-canvas { position: absolute; container-type: inline-size; }
+.scene-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;   /* clicks fall through the opening onto the tallies */
+  user-select: none;
+}
+.scene-wall { position: absolute; z-index: 1; }
+.scene-title {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Edges only — the centre of the room stays untouched. */
+.scene-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+/* A small wooden plaque fixed to the lintel. */
+.scene-routine-name {
+  font-size: max(0.88cqw, 12px);
+  letter-spacing: 0.2em;
+  color: var(--gold-text);
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+  padding: 0.42em 1.3em 0.36em;
+  background: rgba(26, 17, 9, 0.88);
+  border: 2px solid var(--hud-wood-edge);
+  box-shadow: 0 0 0 2px rgba(10, 7, 4, 0.6), 3px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+   The wall: stone surface + chalk tally marks
+   ============================================================ */
+.scene-wall .jail-frame {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  background: none;
+  overflow: hidden;
+}
+.scene-wall .jail-frame::before,
+.scene-wall .jail-frame::after { content: none; }
+
+/* The texture lives on the scroll container with attachment:local, so it
+   scrolls WITH the marks — each tally stays on the same stones. */
+.scene-wall .tally-stage-wrap {
+  height: 100%;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* insets keep the marks inside the on-screen part of the wall when a
+     phone crops its edges (0 on desktop) */
+  padding: 2.4cqw calc(2.2cqw + var(--wall-inset-r, 0px)) 2cqw calc(2.2cqw + var(--wall-inset-l, 0px));
+  background-image: var(--wall-surface);
+  background-repeat: repeat;
+  background-size: 24cqw 24cqw;   /* matches the room's own stone size */
+  background-attachment: local;
+  box-shadow: inset 0 0 2.5cqw rgba(0, 0, 0, 0.55);  /* opening sits in shadow under the lintel */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 228, 207, 0.35) transparent;
+  transition: filter 1.6s ease;
+}
+.scene-wall .tally-stage { gap: 1cqw 1.2cqw; min-height: 0; }
+
+.tally-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Groups sized so about seven fit per row. */
+.scene-wall .tally-group { padding: 0.2cqw; border: 0; background: none; }
+.scene-wall .tally-group svg { width: 4.1cqw; height: 3.95cqw; overflow: visible; }
+/* no box, no lift — the mark is carved, it just catches a little more light */
+.scene-wall .tally-group:hover { background: none; filter: brightness(1.15); }
+
+/* Muted warm stone/chalk — never pure white — over a dark recessed groove.
+   Colours from tally-wall-medieval.svg. */
+.game-view {
+  --tally-chalk: #d8d1b8;
+  --tally-slash: #c7bea2;
+  --tally-groove: #25231d;
+  --tally-chip: #7f7968;
+}
+.tally-chalk  { stroke: var(--tally-chalk); }
+.tally-slash  { stroke: var(--tally-slash); }
+.tally-groove { stroke: var(--tally-groove); }
+.tally-chip   { stroke: var(--tally-chip); }
+
+/* Newest group: a brief catch of light as the chalk goes on. No glow. */
+.scene-wall .tally-group.fresh { animation: chalkFresh 1.4s ease-out; }
+@keyframes chalkFresh {
+  0%   { filter: brightness(1.3); }
+  100% { filter: brightness(1); }
+}
+
+/* Lighting: graded on the wall as a whole (stone surface AND marks), so the
+   tallies inherit the light of the stone they're carved into. Keyed to the
+   room actually on screen (data-lighting), not the raw clock. */
+.game-view[data-lighting="day"]   .tally-stage-wrap { filter: brightness(1.04) saturate(1.03); }
+.game-view[data-lighting="dusk"]  .tally-stage-wrap { filter: brightness(0.8) sepia(0.35) saturate(1.3) hue-rotate(-12deg); }
+.game-view[data-lighting="night"] .tally-stage-wrap { filter: brightness(0.7) sepia(0.2) hue-rotate(175deg) saturate(0.8); }
+
+.scene-wall .wall-empty-state { padding: 6cqw 2cqw; }
+.scene-wall .wall-empty-title { font-size: max(1.4cqw, 14px); color: var(--chalk); text-shadow: var(--ink-outline); }
+.scene-wall .wall-empty-sub { font-size: max(0.9cqw, 10px); color: var(--gold-text); text-shadow: var(--ink-outline); }
+.scene-wall .prev-sentences { border-top-color: rgba(236, 228, 207, 0.25); }
+.scene-wall .prev-sentence-label { text-shadow: var(--ink-outline); }
+
+/* ============================================================
+   HUD — top bar
+   ============================================================ */
+.hud-top { position: absolute; top: 0; left: 0; right: 0; z-index: 20; }
+.hud-top .topbar {
+  margin: 0;
+  padding: 8px 16px;
+  min-height: 46px;
+  background: rgba(10, 7, 4, 0.72);
+  border: 0;
+  border-bottom: 1px solid rgba(138, 106, 58, 0.45);
+  box-shadow: none;
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.hud-top .topbar-title { font-size: 14px; letter-spacing: 3px; }
+.hud-top .topbar-actions { gap: 10px; }
+.hud-top .pixel-btn-tiny { font-size: 11px; padding: 9px 14px; }
+.label-short { display: none; }
+
+/* ============================================================
+   HUD — side panels (docked; drawers when collapsed)
+   ============================================================ */
+.hud-panel {
+  position: absolute;
+  top: 60px;
+  width: var(--hud-w);
+  max-height: calc(100vh - 74px);
+  overflow-y: auto;
+  z-index: 10;
+  padding: 12px 12px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(138, 106, 58, 0.6) transparent;
+}
+.hud-left {
+  left: 14px;
+  background: var(--hud-wood);
+  border: 2px solid var(--hud-wood-edge);
+  box-shadow: 0 0 0 2px rgba(10, 7, 4, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
+}
+.hud-right {
+  right: 14px;
+  background: var(--hud-iron);
+  border: 2px solid var(--hud-iron-edge);
+  box-shadow: 0 0 0 2px rgba(6, 6, 8, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.hud-panel .panel-title {
+  font-size: 9px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  color: var(--gold-text);
+  border-bottom: 1px dashed rgba(138, 106, 58, 0.6);
+}
+
+/* routines: a list on the board, the active one picked out in wood */
+.hud-left .routine-list { gap: 4px; margin: 0; }
+.hud-left .routine-item {
+  font-size: 8.5px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(138, 106, 58, 0.3);
+  color: #cbbf9f;
+}
+.hud-left .routine-item:hover { border-color: var(--hud-wood-edge); color: var(--parchment); }
+.hud-left .routine-item.active {
+  background: rgba(138, 106, 58, 0.55);
+  border-color: #c79a55;
+  color: #fff3d6;
+  box-shadow: none;
+}
+
+/* record + achievements: the ledger */
+.hud-right .stats-list { gap: 7px; }
+.hud-right .stats-list dt { font-size: 7.5px; color: #b9bbc4; }
+.hud-right .stats-list dd { font-size: 10px; color: var(--gold-text); }
+.hud-right [data-area="achievements"] { margin-top: 14px; }
+.hud-right .achievements-grid { gap: 5px; }
+.hud-right .achievement-badge { padding: 5px 6px; gap: 8px; border-width: 1px; }
+.hud-right .achievement-title { font-size: 7.5px; }
+.hud-right .achievement-days, .hud-right .achievement-date { font-size: 6.5px; }
+
+/* collapsed (tablet/phone): the same panels become drawers */
+.hud-panel.hud-drawer {
+  top: 0;
+  bottom: 0;
+  max-height: none;
+  width: min(300px, 86vw);
+  z-index: 30;
+  padding-top: 18px;
+  transition: transform 0.28s ease;
+}
+.hud-left.hud-drawer { left: 0; transform: translateX(-105%); }
+.hud-right.hud-drawer { right: 0; transform: translateX(105%); }
+.hud-panel.hud-drawer.open { transform: translateX(0); }
+.hud-backdrop { position: absolute; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.5); }
+
+/* ============================================================
+   HUD — bottom: day + actions, then the quote, directly under the wall
+   (top/left/max-width set inline from the wall's on-screen position)
+   ============================================================ */
+.hud-bottom {
+  position: absolute;
+  z-index: 10;
+  transform: translateX(-50%);
+  width: 560px;          /* capped inline to the visible width on small screens */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;  /* action box and quote share one width */
+  gap: 10px;
+}
+.hud-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 14px;
+  background: var(--hud-wood);
+  border: 2px solid var(--hud-wood-edge);
+  box-shadow: 0 0 0 2px rgba(10, 7, 4, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
+}
+.hud-action .wall-stats-strip { background: none; border: 0; padding: 0; }
+.hud-action .day-counter {
+  font-size: 22px;
+  margin: 0;
+  white-space: nowrap;
+  letter-spacing: 4px;
+  color: var(--gold-text);
+  text-shadow: 2px 2px 0 #000;
+}
+.hud-action .wall-actions { display: flex; justify-content: center; gap: 10px; align-items: center; padding: 0; background: none; border: 0; }
+.hud-action .pixel-btn { white-space: nowrap; }
+.hud-action .pixel-btn-big { font-size: 12px; padding: 12px 20px; }
+.hud-action .pixel-btn-danger { font-size: 10px; padding: 11px 14px; }
+
+.hud-bottom .quote-plaque {
+  margin: 0;
+  max-width: none;
+  padding: 12px 20px;
+  background: #d9c89b;
+  border: 2px solid #2e2013;
+  box-shadow: 0 0 0 2px var(--bronze), inset 0 0 0 2px rgba(255, 245, 215, 0.35), 4px 5px 0 rgba(0, 0, 0, 0.4);
+}
+.hud-bottom .quote-plaque-hook { display: none; }
+.hud-bottom .quote-plaque { text-align: center; }
+.hud-bottom .quote-plaque-text { font-size: 10.5px; line-height: 1.9; color: #2e2013; }
+
+.scroll-cue {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 2px;
+  align-self: center;
+  color: var(--parchment);
+  text-shadow: var(--ink-outline);
+  background: none;
+  border: 0;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.scroll-cue:hover { opacity: 1; }
+
+/* ============================================================
+   DATA VIEW — below the game view; scrolls up over it
+   ============================================================ */
+.game-spacer { height: 100vh; height: 100dvh; pointer-events: none; }
+.data-view {
+  position: relative;
+  z-index: 5;
+  background: #0f0c08;
+  border-top: 2px solid rgba(138, 106, 58, 0.6);
+  box-shadow: 0 -12px 24px rgba(0, 0, 0, 0.5);
+  padding: 28px 16px 48px;
+}
+.data-view { padding: 40px 24px 64px; }
+.data-view .cell-log {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-areas: "head head" "cal bars";
+  gap: 20px 32px;
+  align-items: start;
+}
+.data-view .cell-log-head { grid-area: head; }
+.data-view .calendar-box { grid-area: cal; padding: 18px; }
+.data-view .bar-log { grid-area: bars; }
+.data-view .cell-log .panel-title { font-size: 16px; padding-bottom: 10px; opacity: 1; }
+.data-view .calendar-nav { margin-bottom: 14px; }
+.data-view .calendar-nav .pixel-btn-tiny { font-size: 13px; padding: 8px 14px; }
+.data-view .calendar-label { font-size: 15px; }
+.data-view .calendar-weekdays { font-size: 11px; margin-bottom: 8px; }
+.data-view .calendar-grid { gap: 5px; }
+.data-view .cal-cell { font-size: 13px; }
+.data-view .bar-log-title { font-size: 13px; margin-bottom: 12px; }
+.data-view .bar-log-rows { gap: 8px; }
+.data-view .bar-row { grid-template-columns: 72px 1fr; font-size: 11px; }
+.data-view .bar-row .bar-track { height: 16px; }
+.data-view .bar-log-empty { font-size: 12px; line-height: 1.8; }
+@media (max-width: 900px) {
+  .data-view .cell-log { grid-template-columns: 1fr; grid-template-areas: "head" "cal" "bars"; }
+}
+
+/* ============================================================
+   Phones
+   ============================================================ */
+@media (max-width: 700px) {
+  .hud-top .topbar-title { display: none; }
+  .label-long { display: none; }
+  .label-short { display: inline; }
+  .hud-top .topbar { padding: 6px 8px; min-height: 42px; }
+  .hud-top .topbar-actions { gap: 6px; }
+  .hud-top .pixel-btn-tiny { font-size: 9px; padding: 8px 9px; }
+  .scene-routine-name { font-size: 11px; }
+  .hud-action { padding: 10px 12px 12px; gap: 10px; }
+  .hud-action .day-counter { font-size: 18px; }
+  .hud-action .pixel-btn-big { font-size: 10px; padding: 10px 12px; }
+  .hud-action .pixel-btn-danger { font-size: 9px; padding: 9px 10px; }
+  .hud-bottom .quote-plaque { padding: 10px 14px; }
+  .hud-bottom .quote-plaque-text { font-size: 9px; }
+  .data-view { padding: 28px 12px 48px; }
+  .data-view .cal-cell { font-size: 11px; }
+}
+
+/* ============================================================
+   Debug-only environment switcher (VITE_SHOW_ENV_DEBUG=true)
+   ============================================================ */
+.dev-env-switcher {
+  position: fixed;
+  bottom: 10px; left: 10px;
+  z-index: 10002;
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 2px solid var(--bronze);
+  padding: 6px;
+}
+.dev-env-switcher button {
+  font-family: inherit;
+  font-size: 8px;
+  padding: 4px 6px;
+  cursor: pointer;
+  background: #2a2a2e;
+  color: var(--parchment);
+  border: 1px solid var(--bronze);
+}
+.dev-env-switcher button.active { background: var(--bronze); color: #111; }

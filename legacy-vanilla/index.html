@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TALLY WALL — Habit Sentence Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="crt-overlay" aria-hidden="true"></div>
+<div class="noise-overlay" aria-hidden="true"></div>
+
+<div id="app" class="app">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="brand-bracket">[</span>
+      <span class="brand-text">TALLY WALL</span>
+      <span class="brand-bracket">]</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="muteBtn" class="pixel-btn pixel-btn-tiny" type="button">SFX: ON</button>
+      <button id="addRoutineBtn" class="pixel-btn pixel-btn-small" type="button">+ NEW ROUTINE</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT: Routine navigation -->
+    <aside class="panel sidebar" data-area="sidebar">
+      <h2 class="panel-title">ROUTINES</h2>
+      <ul id="routineList" class="routine-list"></ul>
+
+      <div class="sidebar-divider"></div>
+
+      <h2 class="panel-title">CASE FILE</h2>
+      <div id="caseFile" class="case-file"></div>
+    </aside>
+
+    <!-- CENTER: Streak wall -->
+    <main class="panel wall-panel">
+
+      <div class="wall-header" data-area="wall-header">
+        <div class="habit-name-box">
+          <span class="bracket">[</span><span id="habitNameLabel">ROUTINE</span><span class="bracket">]</span>
+        </div>
+        <div id="dayCounter" class="day-counter">DAY 0</div>
+        <div class="streak-line-row">
+          <div class="streak-chip">
+            <span class="chip-label">SENTENCE</span>
+            <span id="currentStreakVal" class="chip-value">0 DAYS</span>
+          </div>
+          <div class="streak-chip chip-amber">
+            <span class="chip-label">LONGEST SENTENCE</span>
+            <span id="bestStreakVal" class="chip-value">0 DAYS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="jail-frame" data-area="tally-wall">
+        <div class="jail-bars jail-bars-left" aria-hidden="true"></div>
+        <div class="tally-stage-wrap">
+          <div id="tallyStage" class="tally-stage">
+            <p class="wall-empty-msg" id="wallEmptyMsg">NO TALLIES YET. START YOUR SENTENCE TODAY.</p>
+          </div>
+          <div id="prevSentences" class="prev-sentences"></div>
+        </div>
+        <div class="jail-bars jail-bars-right" aria-hidden="true"></div>
+      </div>
+
+      <div class="wall-actions" data-area="complete-btn">
+        <button id="markTodayBtn" class="pixel-btn pixel-btn-big" type="button">+ MARK TODAY COMPLETE</button>
+        <button id="undoBtn" class="pixel-btn pixel-btn-danger" type="button" hidden>UNDO TALLY</button>
+      </div>
+
+      <section class="cell-log" data-area="history">
+        <div class="cell-log-head">
+          <h2 class="panel-title">CELL LOG</h2>
+        </div>
+
+        <div class="calendar-box">
+          <div class="calendar-nav">
+            <button id="prevMonthBtn" class="pixel-btn pixel-btn-tiny" type="button">&lt;</button>
+            <span id="calendarLabel" class="calendar-label">MONTH YYYY</span>
+            <button id="nextMonthBtn" class="pixel-btn pixel-btn-tiny" type="button">&gt;</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+
+        <div class="bar-log">
+          <h3 class="bar-log-title">RECENT TALLIES</h3>
+          <div id="barLog" class="bar-log-rows"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT: Stats + achievements -->
+    <aside class="panel stats-panel">
+      <div data-area="stats">
+        <h2 class="panel-title">RECORD</h2>
+        <dl id="statsList" class="stats-list"></dl>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div data-area="achievements">
+        <h2 class="panel-title">ACHIEVEMENTS</h2>
+        <div id="achievementsGrid" class="achievements-grid"></div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip" class="tooltip" hidden></div>
+
+<!-- Group detail popover -->
+<div id="groupPopover" class="modal-overlay" hidden>
+  <div class="modal pixel-panel">
+    <div class="modal-title">TALLY GROUP</div>
+    <div id="groupPopoverBody" class="modal-body"></div>
+    <button class="pixel-btn pixel-btn-small modal-close" data-close>CLOSE</button>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirmModal" class="modal-overlay" hidden>
+  <div class="modal pixel-panel">
+    <div class="modal-title" id="confirmTitle">CONFIRM</div>
+    <div class="modal-body" id="confirmBody"></div>
+    <div class="modal-actions">
+      <button id="confirmYes" class="pixel-btn pixel-btn-danger" type="button">YES</button>
+      <button id="confirmNo" class="pixel-btn pixel-btn-small" type="button">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add routine modal -->
+<div id="addRoutineModal" class="modal-overlay" hidden>
+  <div class="modal pixel-panel">
+    <div class="modal-title">NEW ROUTINE</div>
+    <div class="modal-body">
+      <label class="field-label" for="newRoutineName">ROUTINE NAME</label>
+      <input id="newRoutineName" class="pixel-input" type="text" maxlength="28" placeholder="E.G. READ 20 PAGES" />
+      <label class="field-label" for="newRoutineStart">START DATE</label>
+      <input id="newRoutineStart" class="pixel-input" type="date" />
+    </div>
+    <div class="modal-actions">
+      <button id="createRoutineBtn" class="pixel-btn pixel-btn-small" type="button">CREATE</button>
+      <button id="cancelRoutineBtn" class="pixel-btn pixel-btn-small" type="button">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement popup -->
+<div id="achievementPopup" class="achievement-popup" hidden>
+  <div class="achievement-popup-inner pixel-panel">
+    <div class="achievement-popup-label">ACHIEVEMENT UNLOCKED</div>
+    <div id="achievementIconSlot" class="achievement-icon-slot"></div>
+    <div id="achievementPopupTitle" class="achievement-popup-title">TITLE</div>
+    <div id="achievementPopupDays" class="achievement-popup-days">0 DAYS</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
