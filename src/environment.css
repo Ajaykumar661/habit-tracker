@@ -68,6 +68,227 @@
   pointer-events: none;
 }
 
+/* ============================================================
+   SCENE EFFECTS (components/SceneFx.jsx)
+   Sprites laid over the flattened room art, in its own pixel grid.
+   Only transform, opacity and background-position animate.
+
+   Positions arrive as percentages (so they stay registered to the art),
+   while travel distances arrive as cqw custom properties — .scene-canvas is
+   a size container, so those scale with the room at any zoom.
+   ============================================================ */
+.fx-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.fx-layer > span {
+  position: absolute;
+  background-repeat: no-repeat;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  animation-delay: var(--delay, 0s);
+}
+.fx-layer.fx-paused > span { animation-play-state: paused; }
+
+/* ---- frame stepping -------------------------------------------------
+   A strip is one row of N equal cells. With background-size N00%, an x
+   position of i/(N-1) shows frame i, so each keyframe holds a whole frame
+   instead of tweening between two of them. */
+.fx-step-3  { background-size: 300% 100%; }
+.fx-step-4  { background-size: 400% 100%; }
+.fx-step-5  { background-size: 500% 100%; }
+.fx-step-11 { background-size: 1100% 100%; }
+@keyframes fx-f3 {
+  0%, 33.32%     { background-position-x: 0%; }
+  33.33%, 66.65% { background-position-x: 50%; }
+  66.66%, 100%   { background-position-x: 100%; }
+}
+@keyframes fx-f4 {
+  0%, 24.99%     { background-position-x: 0%; }
+  25%, 49.99%    { background-position-x: 33.3333%; }
+  50%, 74.99%    { background-position-x: 66.6667%; }
+  75%, 100%      { background-position-x: 100%; }
+}
+@keyframes fx-f5 {
+  0%, 19.99%     { background-position-x: 0%; }
+  20%, 39.99%    { background-position-x: 25%; }
+  40%, 59.99%    { background-position-x: 50%; }
+  60%, 79.99%    { background-position-x: 75%; }
+  80%, 100%      { background-position-x: 100%; }
+}
+@keyframes fx-f11 {
+  0%, 9.08%      { background-position-x: 0%; }
+  9.09%, 18.17%  { background-position-x: 10%; }
+  18.18%, 27.26% { background-position-x: 20%; }
+  27.27%, 36.35% { background-position-x: 30%; }
+  36.36%, 45.44% { background-position-x: 40%; }
+  45.45%, 54.53% { background-position-x: 50%; }
+  54.54%, 63.62% { background-position-x: 60%; }
+  63.63%, 72.71% { background-position-x: 70%; }
+  72.72%, 81.80% { background-position-x: 80%; }
+  81.81%, 90.89% { background-position-x: 90%; }
+  90.90%, 100%   { background-position-x: 100%; }
+}
+
+/* ---- lantern flames -------------------------------------------------
+   Two animations: the frame cycle, and a slow glow pulse that keeps the
+   light from looking mechanical. Durations and delays are set per lantern
+   in SceneFx so three flames never burn in unison. */
+.fx-flame {
+  animation-name: fx-f11, fx-flicker;
+  animation-timing-function: steps(1, end), ease-in-out;
+  transform-origin: 50% 100%;
+}
+@keyframes fx-flicker {
+  0%, 100% { opacity: 0.9;  transform: scaleY(1); }
+  35%      { opacity: 1;    transform: scaleY(1.06); }
+  70%      { opacity: 0.94; transform: scaleY(0.97); }
+}
+
+/* ---- sky ------------------------------------------------------------ */
+.fx-star {
+  animation-name: fx-f4, fx-twinkle;
+  animation-duration: var(--dur, 4s), var(--dur, 4s);
+  animation-timing-function: steps(1, end), ease-in-out;
+}
+@keyframes fx-twinkle {
+  0%, 100% { opacity: 0.25; }
+  45%      { opacity: 1; }
+}
+
+/* Mostly waiting: the streak is a brief flash near the end of a long cycle,
+   so a shooting star stays a surprise rather than a metronome. */
+.fx-shoot {
+  animation-name: fx-shoot-move, fx-shoot-fade, fx-f5;
+  animation-duration: var(--dur, 26s);
+  animation-timing-function: linear, linear, steps(1, end);
+}
+@keyframes fx-shoot-move {
+  0%, 92%   { transform: translate(0, 0); }
+  100%      { transform: translate(var(--tx, 4cqw), var(--ty, 1.5cqw)); }
+}
+@keyframes fx-shoot-fade {
+  0%, 92%   { opacity: 0; }
+  94%       { opacity: 1; }
+  99%, 100% { opacity: 0; }
+}
+
+.fx-cloud {
+  opacity: var(--op, 0.6);
+  animation-name: fx-slide;
+  animation-duration: var(--dur, 70s);
+}
+.fx-mist {
+  opacity: 0.55;
+  animation-name: fx-slide, fx-breathe;
+  animation-duration: var(--dur, 50s), 14s;
+}
+@keyframes fx-slide {
+  0%, 100% { transform: translateX(calc(var(--tx, 2cqw) * -1)); }
+  50%      { transform: translateX(var(--tx, 2cqw)); }
+}
+@keyframes fx-breathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+
+/* ---- living things --------------------------------------------------- */
+.fx-firefly {
+  animation-name: fx-f4, fx-wander-0, fx-blink;
+  animation-duration: 0.5s, var(--dur, 15s), var(--blink, 4s);
+  animation-timing-function: steps(1, end), ease-in-out, ease-in-out;
+}
+.fx-firefly.fx-path-1 { animation-name: fx-f4, fx-wander-1, fx-blink; }
+.fx-firefly.fx-path-2 { animation-name: fx-f4, fx-wander-2, fx-blink; }
+@keyframes fx-blink {
+  0%, 100% { opacity: 0.15; }
+  30%      { opacity: 1; }
+  58%      { opacity: 0.8; }
+  74%      { opacity: 0.2; }
+}
+
+.fx-fglow { animation-name: fx-blink; animation-duration: var(--blink, 4s); }
+
+.fx-mote {
+  opacity: 0.75;
+  animation-name: fx-wander-0, fx-breathe;
+  animation-duration: var(--dur, 20s), 7s;
+}
+.fx-mote.fx-path-1 { animation-name: fx-wander-1, fx-breathe; }
+.fx-mote.fx-path-2 { animation-name: fx-wander-2, fx-breathe; }
+
+/* Three slow loops, so a crowd never drifts as one. --amp scales each. */
+@keyframes fx-wander-0 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(calc(var(--amp) * 0.9), calc(var(--amp) * -0.55)); }
+  50% { transform: translate(calc(var(--amp) * 0.35), calc(var(--amp) * -1.2)); }
+  75% { transform: translate(calc(var(--amp) * -0.8), calc(var(--amp) * -0.45)); }
+}
+@keyframes fx-wander-1 {
+  0%, 100% { transform: translate(0, 0); }
+  30% { transform: translate(calc(var(--amp) * -0.75), calc(var(--amp) * 0.5)); }
+  60% { transform: translate(calc(var(--amp) * -1.15), calc(var(--amp) * -0.5)); }
+  80% { transform: translate(calc(var(--amp) * -0.3), calc(var(--amp) * -0.9)); }
+}
+@keyframes fx-wander-2 {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(calc(var(--amp) * 0.45), calc(var(--amp) * 0.75)); }
+  55% { transform: translate(calc(var(--amp) * 1.15), calc(var(--amp) * 0.1)); }
+  85% { transform: translate(calc(var(--amp) * 0.5), calc(var(--amp) * -0.7)); }
+}
+
+/* Birds, bats and butterflies cross their band and come back, bobbing on
+   the way. `flip` starts one facing the other direction. */
+.fx-traveller {
+  animation-name: fx-f4, fx-cross;
+  animation-duration: 0.42s, var(--dur, 22s);
+  animation-timing-function: steps(1, end), ease-in-out;
+}
+.fx-traveller.fx-step-5 { animation-name: fx-f5, fx-cross; }
+.fx-traveller.flip { scale: -1 1; }
+@keyframes fx-cross {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(calc(var(--span) * 0.5), calc(var(--bob) * -1)); }
+  50%      { transform: translate(var(--span), 0); }
+  75%      { transform: translate(calc(var(--span) * 0.5), var(--bob)); }
+}
+
+/* Embers lift out of a lantern and burn out on the way up. */
+.fx-ember {
+  animation-name: fx-f3, fx-rise;
+  animation-duration: 0.42s, var(--dur, 4.5s);
+  animation-timing-function: steps(1, end), ease-out;
+}
+@keyframes fx-rise {
+  0%   { transform: translate(0, 0) scale(0.7); opacity: 0; }
+  12%  { opacity: 0.95; }
+  70%  { opacity: 0.5; }
+  100% { transform: translate(calc(var(--rise) * 0.25), calc(var(--rise) * -1)) scale(1); opacity: 0; }
+}
+
+/* ---- the sleeping cat ------------------------------------------------ */
+.fx-zzz {
+  animation-name: fx-zzz;
+  animation-duration: var(--dur, 5.4s);
+  animation-timing-function: linear;
+}
+@keyframes fx-zzz {
+  0%   { transform: translate(0, 0) scale(0.55); opacity: 0; }
+  15%  { opacity: 0.95; }
+  70%  { opacity: 0.7; }
+  100% { transform: translate(calc(var(--rise) * 0.45), calc(var(--rise) * -1)) scale(1.1); opacity: 0; }
+}
+
+/* ---- light shafts ---------------------------------------------------- */
+.fx-shaft {
+  opacity: 0.3;
+  mix-blend-mode: screen;
+  animation-name: fx-shaft;
+  animation-duration: var(--dur, 12s);
+}
+@keyframes fx-shaft { 0%, 100% { opacity: 0.16; } 50% { opacity: 0.36; } }
+
+/* Anything that merely moves is stilled; anything whose whole point is
+   movement is dropped. Flames keep cycling — a frozen fire reads as broken. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-cloud, .fx-mist, .fx-mote, .fx-star, .fx-shaft, .fx-fglow { animation: none; }
+  .fx-traveller, .fx-ember, .fx-shoot, .fx-zzz, .fx-firefly { display: none; }
+}
+
 /* Edges only — the centre of the room stays untouched. */
 .scene-vignette {
   position: absolute;
@@ -200,6 +421,26 @@
   background: none;
   border-bottom: 0;
 }
+/* Settings sheet */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9px;
+  color: var(--cream-dim);
+  letter-spacing: 1px;
+  margin: 14px 0 6px;
+}
+.settings-row .pixel-btn { display: inline-flex; align-items: center; gap: 6px; }
+.settings-section { border-top: 1px dashed rgba(138, 106, 58, 0.5); margin-top: 14px; padding-top: 12px; }
+.settings-label { font-size: 9px; color: var(--gold-text); letter-spacing: 1px; margin-bottom: 8px; }
+.settings-help { font-size: 8.5px; line-height: 1.9; color: var(--cream-dim); margin: 0 0 10px; }
+.settings-warn { color: var(--red); }
+.settings-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.settings-note { font-size: 8px; line-height: 1.8; color: var(--green); letter-spacing: 0.5px; margin: 12px 0 0; }
+.settings-note.err { color: var(--red); }
+
 .pixel-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -471,7 +712,9 @@
    ============================================================ */
 .dev-env-switcher {
   position: fixed;
-  bottom: 10px; left: 10px;
+  /* clears the mobile tab bar, which is fixed to the bottom edge */
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
+  left: 10px;
   z-index: 10002;
   display: flex;
   gap: 4px;

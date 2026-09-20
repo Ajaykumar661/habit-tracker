@@ -9,11 +9,16 @@ const PUB = path.resolve(import.meta.dirname, '..', 'public');
 
 const required = [
   ...['day', 'dusk', 'night'].map((st) => ({ file: `/assets/environment/${st}-scene.png`, alpha: true })),
+  ...['dawn', 'day', 'dusk', 'night'].map((st) => ({ file: `/assets/environment/mobile-${st}-scene.png`, alpha: true })),
   { file: '/assets/environment/wall-surface.png' },
+  { file: '/fonts/press-start-2p.ttf' },
+  // effect sprites — regenerate with scripts/build-scene-fx.py
+  ...['flame-night', 'flame-dusk', 'star-warm', 'star-blue', 'star-pink', 'firefly', 'shoot',
+    'ember-0', 'ember-1', 'ember-2', 'bat', 'bird', 'butterfly-orange', 'butterfly-blue', 'static']
+    .map((n) => ({ file: `/assets/fx/${n}.png`, alpha: true })),
 ];
 const planned = [
   { file: '/assets/environment/dawn-scene.png', alpha: true },
-  { file: '/assets/props/flame-sheet.png', alpha: true },
   ...['board-wood', 'board-ledger', 'sign-hanging', 'parchment', 'button-wood', 'button-wood-hover',
     'button-wood-pressed', 'badge-plaque', 'badge-plaque-locked'].map((n) => ({ file: `/assets/ui/${n}.png`, alpha: true })),
 ];
@@ -22,7 +27,8 @@ function inspect({ file, alpha }) {
   const abs = path.join(PUB, file);
   if (!fs.existsSync(abs)) return 'missing';
   const buf = fs.readFileSync(abs);
-  if (buf.readUInt32BE(0) !== 0x89504e47) return 'not a PNG';
+  if (file.endsWith('.png') && buf.readUInt32BE(0) !== 0x89504e47) return 'not a PNG';
+  if (!file.endsWith('.png')) return `ok (${(buf.length / 1024).toFixed(0)} kB)`;
   const colorType = buf[25]; // 6 RGBA, 4 grey+alpha, 3 palette
   if (alpha && ![3, 4, 6].includes(colorType)) return 'no alpha channel';
   return `ok (${buf.readUInt32BE(16)}×${buf.readUInt32BE(20)})`;

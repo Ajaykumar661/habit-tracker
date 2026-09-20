@@ -70,3 +70,15 @@ export function IconTrophy(props) {
     </svg>
   );
 }
+
+// Short, chunky teeth — long thin spokes read as a sun at HUD size.
+export function IconGear(props) {
+  return (
+    <svg {...BASE} {...props}>
+      <circle cx="12" cy="12" r="6.6" {...STROKE} />
+      <circle cx="12" cy="12" r="2.4" {...STROKE} />
+      <path {...STROKE} strokeWidth="2.6"
+        d="M12 3.2v2.2M12 18.6v2.2M3.2 12h2.2M18.6 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6" />
+    </svg>
+  );
+}
