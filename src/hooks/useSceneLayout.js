@@ -5,6 +5,7 @@ const MARGIN = 14;
 const HUD_MIN = 215;  // below this a side panel collapses into a drawer
 const HUD_MAX = 270;
 const NARROW = 700;
+const TAB_BAR_H = 86;  // reserved above the mobile bottom tab bar (incl. a home-indicator allowance)
 
 // Works out where the room sits on screen and where each HUD zone goes.
 // The room is scaled to COVER the viewport (cropping naturally), then
@@ -14,6 +15,10 @@ const NARROW = 700;
 export function computeSceneLayout(scene, vw, vh, bottomH) {
   const { width: W, height: H, regions: { wall } } = scene;
   const narrow = vw < NARROW;
+  // On mobile a fixed tab bar (BottomTabBar.jsx) sits below everything else
+  // in the HUD — reserve its height so the wall centring and bottomTop clamp
+  // never let the day/actions/quote group sit underneath it.
+  const usableVh = narrow ? vh - TAB_BAR_H : vh;
 
   // Always cover — the room fills the screen at every size. On a portrait
   // phone that runs the wall off both edges; the stone still registers with
@@ -27,7 +32,7 @@ export function computeSceneLayout(scene, vw, vh, bottomH) {
   // bottom HUD — then clamped so a covering room never shows a gap.
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   let left = vw / 2 - (wall.x + wall.w / 2) * scale;
-  let top = (TOP_BAR + (vh - bottomH - MARGIN)) / 2 - (wall.y + wall.h / 2) * scale;
+  let top = (TOP_BAR + (usableVh - bottomH - MARGIN)) / 2 - (wall.y + wall.h / 2) * scale;
   if (cw >= vw) left = clamp(left, vw - cw, 0);
   if (ch >= vh) top = clamp(top, vh - ch, 0);
 
@@ -57,7 +62,7 @@ export function computeSceneLayout(scene, vw, vh, bottomH) {
     narrow,
     hudWidth: Math.min(HUD_MAX, Math.max(HUD_MIN, side)),
     // directly under the wall; pulled up only if the viewport is too short
-    bottomTop: Math.max(TOP_BAR, Math.min(wallRect.bottom + MARGIN, vh - bottomH - MARGIN)),
+    bottomTop: Math.max(TOP_BAR, Math.min(wallRect.bottom + MARGIN, usableVh - bottomH - MARGIN)),
     bottomCenter: wallRect.left + wallRect.width / 2,
   };
 }
@@ -68,6 +73,20 @@ export function computeSceneLayout(scene, vw, vh, bottomH) {
 function viewport() {
   const el = document.documentElement;
   return { vw: el.clientWidth, vh: el.clientHeight };
+}
+
+// Standalone width check, independent of any particular scene — used to
+// pick landscape vs. portrait artwork *before* a scene is chosen (GameView
+// needs to know which room frame it's laying out before it can call
+// computeSceneLayout with it).
+export function useIsNarrowViewport() {
+  const [narrow, setNarrow] = useState(() => viewport().vw < NARROW);
+  useEffect(() => {
+    const ro = new ResizeObserver(() => setNarrow(viewport().vw < NARROW));
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, []);
+  return narrow;
 }
 
 export function useSceneLayout(scene) {

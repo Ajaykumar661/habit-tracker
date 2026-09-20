@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAnimation, useReducedMotion } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import DayNumber from './components/DayNumber';
@@ -22,7 +24,6 @@ import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { SoundFX } from './lib/sound';
 import { todayStr } from './lib/dates';
 import { pickQuote } from './data/quotes';
-import { sceneFor } from './data/assets';
 
 let particleSeq = 0;
 
@@ -39,13 +40,13 @@ export default function App() {
   } = useTallyWallState();
 
   const envState = useEnvironmentState();
-  const scene = sceneFor(envState);
 
   const [calendarCursor, setCalendarCursor] = useState(startOfMonth);
   const [tooltip, setTooltip] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
   const [groupDates, setGroupDates] = useState(null);
+  const [drawer, setDrawer] = useState(null); // 'routines' | 'record' | null — the mobile HUD drawer
   const [achievement, setAchievement] = useState(null);
   const [particles, setParticles] = useState([]);
   const [muted, setMuted] = useState(SoundFX.isMuted());
@@ -75,6 +76,24 @@ export default function App() {
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [envState, stats.currentStreak]);
+
+  // Android hardware back button: close whatever's open (native only — a
+  // browser has no such button to listen for). Registering a listener hands
+  // Capacitor's own back/exit behavior to us entirely, so the last case must
+  // exit the app itself or the button would go dead with nothing left open.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+    const sub = CapApp.addListener('backButton', () => {
+      if (achievement) { setAchievement(null); return; }
+      if (confirm) { handleConfirmNo(); return; }
+      if (groupDates) { handleCloseGroup(); return; }
+      if (addRoutineOpen) { SoundFX.close(); setAddRoutineOpen(false); return; }
+      if (drawer) { setDrawer(null); return; }
+      CapApp.exitApp();
+    });
+    return () => { sub.then((h) => h.remove()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [achievement, confirm, groupDates, addRoutineOpen, drawer]);
 
   function handleRerollQuote() {
     setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }));
@@ -238,16 +257,17 @@ export default function App() {
     <div className="app" data-env={envState}>
       {/* GAME VIEW — fixed, full-viewport room with the HUD around it */}
       <GameView
-        scene={scene}
+        envState={envState}
         shake={appControls}
-        topBar={({ collapsed, openRoutines, openRecord }) => (
+        drawer={drawer}
+        setDrawer={setDrawer}
+        onOpenCalendar={scrollToLog}
+        topBar={({ collapsed }) => (
           <TopBar
             muted={muted}
             onToggleMute={handleToggleMute}
             onAddRoutine={() => { SoundFX.open(); setAddRoutineOpen(true); }}
             collapsed={collapsed}
-            openRoutines={openRoutines}
-            openRecord={openRecord}
           />
         )}
         title={<span className="scene-routine-name">{activeRoutine.name}</span>}
