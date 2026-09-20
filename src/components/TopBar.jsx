@@ -7,6 +7,8 @@ import { IconPlus, IconGear } from './icons';
 // so the bar carries only what has nowhere else to go.
 export default function TopBar({ onAddRoutine, onOpenSettings, collapsed }) {
   if (collapsed) {
+    // Source order is the visual order: the bar is space-between, so the
+    // gear sits at the left edge and new-routine at the right.
     return (
       <header className="topbar topbar-mobile">
         <motion.button

@@ -429,8 +429,13 @@
    directly on the scenery, not a strip covering the sky (see TopBar.jsx) */
 .hud-top .topbar-mobile {
   display: flex;
-  justify-content: flex-end;
+  /* Settings to the left, new routine to the right: the two thumbs reach
+     opposite corners, and the destructive-free pair stops sitting in one
+     cluster where a mis-tap opens the wrong sheet. */
+  justify-content: space-between;
   padding: 10px 12px;
+  padding-left: calc(12px + var(--safe-left));
+  padding-right: calc(12px + var(--safe-right));
   min-height: 0;
   background: none;
   border-bottom: 0;

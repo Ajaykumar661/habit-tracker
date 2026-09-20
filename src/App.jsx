@@ -19,6 +19,7 @@ import AddRoutineModal from './components/AddRoutineModal';
 import StreakLostModal from './components/StreakLostModal';
 import DayDetail from './components/DayDetail';
 import SettingsSheet from './components/SettingsSheet';
+import GuideSheet from './components/GuideSheet';
 import GroupPopover from './components/GroupPopover';
 import AchievementPopup from './components/AchievementPopup';
 import ParticleLayer from './components/ParticleLayer';
@@ -48,7 +49,7 @@ export default function App() {
     selectRoutine, addRoutine, deleteRoutine, addCompletion, removeCompletion,
     acknowledgeStreakLoss, acknowledgeShield, today, progression, addProgress,
     board, advanceQuest, habits, completions, notes, setNote, setBreakReason,
-    settings, setSetting,
+    settings, setSetting, editRoutine, restoreRoutine, purgeRoutine, archived,
   } = useTallyWallState();
 
   const envState = useEnvironmentState();
@@ -58,6 +59,8 @@ export default function App() {
   const [confirm, setConfirm] = useState(null);
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState(null);
   const [groupDates, setGroupDates] = useState(null);
   const [openDay, setOpenDay] = useState(null);
   const [drawer, setDrawer] = useState(null); // 'routines' | 'record' | null — the mobile HUD drawer
@@ -96,6 +99,19 @@ export default function App() {
   const atRisk = !doneToday && stats.currentStreak > 0
     && isScheduledOn(activeRoutine, today)
     && new Date().getHours() >= 19 && envState !== null;
+
+  // First run: show the guide once. It is opened from an effect rather than
+  // from initial state so that a restored backup, which reloads the page
+  // with settings already written, does not reopen it.
+  useEffect(() => {
+    if (settings && settings.seenGuide === false) setGuideOpen(true);
+  }, [settings]);
+
+  function closeGuide() {
+    SoundFX.close();
+    setGuideOpen(false);
+    if (settings?.seenGuide === false) setSetting('seenGuide', true);
+  }
 
   // The rally, in the days after a break. Derived from the same stats the
   // wall already computed, so it costs nothing extra.
@@ -343,9 +359,30 @@ export default function App() {
   function handleDeleteRoutine(routine) {
     SoundFX.click();
     setConfirm({
-      title: 'DELETE ROUTINE',
-      body: `Permanently delete "${routine.name}" and all its tallies?`,
+      title: 'RETIRE QUEST',
+      // No longer a destructive act, and the wording says so: the tallies
+      // stay, and settings can bring the quest back.
+      body: `Retire "${routine.name}"? Its tallies are kept, and you can restore it from settings.`,
       onYes: () => { deleteRoutine(routine.id); SoundFX.undo(); },
+    });
+  }
+
+  function handleEditRoutine(routine) {
+    SoundFX.open();
+    setEditingRoutine(routine);
+  }
+
+  function handleSaveRoutine(id, changes) {
+    editRoutine(id, changes);
+    setEditingRoutine(null);
+    SoundFX.tally();
+  }
+
+  function handlePurgeRoutine(routine) {
+    setConfirm({
+      title: 'DELETE FOREVER',
+      body: `Erase "${routine.name}" and every tally it holds? This cannot be undone.`,
+      onYes: () => { purgeRoutine(routine.id); SoundFX.undo(); },
     });
   }
 
@@ -417,6 +454,7 @@ export default function App() {
             activeId={activeRoutine.id}
             onAdvance={handleAdvanceQuest}
             onSelect={(id) => { handleSelectRoutine(id); closeDrawer(); }}
+            onEdit={handleEditRoutine}
             onDelete={handleDeleteRoutine}
           />
         )}
@@ -493,6 +531,7 @@ export default function App() {
         onCreate={handleCreateRoutine}
         today={today}
       />
+      <GuideSheet open={guideOpen} onClose={closeGuide} />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => { SoundFX.close(); setSettingsOpen(false); }}
@@ -500,6 +539,7 @@ export default function App() {
         onToggleMute={handleToggleMute}
         settings={settings}
         onSetSetting={setSetting}
+        onOpenGuide={() => { SoundFX.open(); setSettingsOpen(false); setGuideOpen(true); }}
       />
       {showStreakLost && (
         <StreakLostModal

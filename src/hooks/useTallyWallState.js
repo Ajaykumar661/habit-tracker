@@ -5,6 +5,7 @@ import { computeStats } from '../domain/streaks';
 import { isComplete, valueOf, stepFor, targetFor } from '../domain/completion';
 import { computeProgression } from '../domain/xp';
 import { buildQuestBoard } from '../domain/quests';
+import { applyEdit } from '../domain/editing';
 import { ACHIEVEMENTS } from '../lib/achievements';
 import { habitToday, clampCutoff } from '../lib/dates';
 
@@ -39,6 +40,13 @@ export function useTallyWallState() {
     [state.habits, state.completions],
   );
   const activeRoutine = routines.find((r) => r.id === state.activeHabitId) || routines[0];
+  // Retired quests, newest first — shown only in settings.
+  const archived = useMemo(
+    () => state.habits.filter((h) => h.archivedAt)
+      .map((h) => toRoutineView(h, state.completions))
+      .sort((a, b) => String(b.archivedAt).localeCompare(String(a.archivedAt))),
+    [state.habits, state.completions],
+  );
   // One definition of "today" for the whole app, honouring the day cutoff.
   const today = habitToday(state.settings?.dayCutoffHour ?? 0);
   const stats = useMemo(() => computeStats(activeRoutine, today), [activeRoutine, today]);
@@ -75,19 +83,61 @@ export function useTallyWallState() {
     return habit;
   }
 
+  /**
+   * Retiring a quest keeps its record.
+   *
+   * Removing a habit used to delete every tally with it, which is a year of
+   * someone's life gone to one mis-tap. Archiving takes it off the board and
+   * out of the wall rotation while leaving the chronicle intact, and it can
+   * be brought back or genuinely erased from settings.
+   */
   function deleteRoutine(id) {
     setState((s) => {
-      const habits = s.habits.filter((h) => h.id !== id);
-      if (!habits.length) return s;             // never leave the wall habitless
-      const completions = { ...s.completions };
-      delete completions[id];
+      const live = s.habits.filter((h) => !h.archivedAt && h.id !== id);
+      if (!live.length) return s;               // never leave the wall habitless
       return {
         ...s,
-        habits,
-        completions,
-        activeHabitId: s.activeHabitId === id ? habits[0].id : s.activeHabitId,
+        habits: s.habits.map((h) => (
+          h.id === id ? { ...h, archivedAt: new Date().toISOString() } : h
+        )),
+        activeHabitId: s.activeHabitId === id ? live[0].id : s.activeHabitId,
       };
     });
+  }
+
+  /** Put an archived quest back on the board, record and all. */
+  function restoreRoutine(id) {
+    setState((s) => ({
+      ...s,
+      habits: s.habits.map((h) => (h.id === id ? { ...h, archivedAt: null } : h)),
+      activeHabitId: id,
+    }));
+  }
+
+  /**
+   * Erase an archived quest and its tallies for good. The only path in the
+   * app that destroys history, reachable only from settings, and only for
+   * something already archived.
+   */
+  function purgeRoutine(id) {
+    setState((s) => {
+      const habit = s.habits.find((h) => h.id === id);
+      if (!habit?.archivedAt) return s;         // live quests are archived first
+      const completions = { ...s.completions };
+      delete completions[id];
+      return { ...s, habits: s.habits.filter((h) => h.id !== id), completions };
+    });
+  }
+
+  /**
+   * Change a quest. Only the editable fields move; see domain/editing.js for
+   * why type and start date are frozen.
+   */
+  function editRoutine(id, changes) {
+    setState((s) => ({
+      ...s,
+      habits: s.habits.map((h) => (h.id === id ? applyEdit(h, changes) : h)),
+    }));
   }
 
   /**
@@ -264,7 +314,11 @@ export function useTallyWallState() {
     today,
     selectRoutine,
     addRoutine,
+    editRoutine,
     deleteRoutine,
+    restoreRoutine,
+    purgeRoutine,
+    archived,
     addCompletion,
     addProgress,
     advanceQuest,
