@@ -19,6 +19,9 @@ export const DEFAULT_SETTINGS = {
   // Hours after midnight that still belong to the previous day. 0 = calendar
   // midnight. Kept here so Phase 22's cutoff has one home from the start.
   dayCutoffHour: 0,
+  // Has the guide been read? Stored rather than derived, because "have you
+  // seen this" is not a fact the completion record could ever answer.
+  seenGuide: false,
 };
 
 export function makeId() {

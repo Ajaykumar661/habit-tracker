@@ -449,6 +449,45 @@ body { line-height: 1.6; font-size: 11px; }
 .cutoff-row .choice-btn { flex: 0 0 auto; }
 .settings-note-quiet { font-size: 7px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; line-height: 1.7; }
 
+/* ============================================================
+   The Warden's Guide
+   ============================================================ */
+/* A floor, so the buttons don't move under the reader's thumb while they
+   leaf. Measured, not guessed: at desktop width every page is the same
+   height, so the floor only has work to do once the text wraps. */
+.guide-body { min-height: 134px; }
+@media (max-width: 900px) { .guide-body { min-height: 251px; } }
+.guide-page { display: flex; flex-direction: column; gap: 8px; }
+.guide-head { display: flex; align-items: center; gap: 10px; }
+.guide-icon .pixel-icon span.on { background: var(--amber); }
+.guide-title { margin: 0; font-size: 11px; color: var(--amber); letter-spacing: 1px; }
+.guide-lead {
+  margin: 0; font-size: 8.5px; line-height: 1.8; color: var(--cream);
+}
+.guide-points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.guide-points li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 8px; line-height: 1.8; color: var(--cream-dim);
+}
+/* A drawn square rather than a bullet character: the pixel font has none. */
+.guide-points li::before {
+  content: '';
+  position: absolute; left: 0; top: 6px;
+  width: 4px; height: 4px;
+  background: var(--amber-dim);
+}
+.guide-marker {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 7px; letter-spacing: 2px; color: var(--cream-dim);
+}
+.guide-actions { flex-wrap: wrap; }
+/* BACK keeps its place on page one so the row doesn't shuffle while you
+   leaf, but the global 0.7 is too faint against gold to read as disabled. */
+.guide-actions .pixel-btn:disabled { opacity: 0.32; }
+.guide-skip { margin-left: auto; }
+
 /* ---- the rally: shown only in the days after a break ---------------- */
 .rally {
   display: flex; align-items: center; justify-content: center;

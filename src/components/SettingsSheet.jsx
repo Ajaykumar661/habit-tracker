@@ -15,7 +15,7 @@ const HOURS = Array.from(
 // Restoring replaces everything, so it asks first and says exactly what it
 // found in the file before doing it.
 export default function SettingsSheet({
-  open, onClose, muted, onToggleMute, settings, onSetSetting,
+  open, onClose, muted, onToggleMute, settings, onSetSetting, onOpenGuide,
 }) {
   const fileRef = useRef(null);
   const [note, setNote] = useState(null);       // { kind: 'ok' | 'err', text }
@@ -114,6 +114,13 @@ export default function SettingsSheet({
           />
         </label>
       )}
+
+      <div className="settings-row">
+        <span>THE GUIDE</span>
+        <button type="button" className="pixel-btn pixel-btn-small" onClick={onOpenGuide}>
+          READ
+        </button>
+      </div>
 
       <div className="settings-section">
         <div className="settings-label">WHEN THE DAY TURNS</div>

@@ -9,7 +9,7 @@ import { isMeasuredType } from '../domain/completion';
 // name selects which habit the wall shows. Rolling them into one control
 // would mean you couldn't look at a habit without also ticking it.
 
-function QuestRow({ entry, active, onAdvance, onSelect, onDelete, canDelete }) {
+function QuestRow({ entry, active, onAdvance, onSelect, onEdit, onDelete, canDelete }) {
   const { habit, progress, due } = entry;
   const measured = isMeasuredType(habit.type);
 
@@ -49,12 +49,22 @@ function QuestRow({ entry, active, onAdvance, onSelect, onDelete, canDelete }) {
         </span>
       </button>
 
+      <button
+        type="button"
+        className="routine-edit-btn"
+        title="Edit quest"
+        aria-label={`Edit ${habit.name}`}
+        onClick={(e) => { e.stopPropagation(); onEdit(habit); }}
+      >
+        <span className="edit-glyph" aria-hidden="true" />
+      </button>
+
       {canDelete && (
         <button
           type="button"
           className="routine-delete-btn"
-          title="Delete quest"
-          aria-label={`Delete ${habit.name}`}
+          title="Retire quest"
+          aria-label={`Retire ${habit.name}`}
           onClick={(e) => { e.stopPropagation(); onDelete(habit); }}
         >
           ×
@@ -64,7 +74,7 @@ function QuestRow({ entry, active, onAdvance, onSelect, onDelete, canDelete }) {
   );
 }
 
-export default function QuestBoard({ board, activeId, onAdvance, onSelect, onDelete }) {
+export default function QuestBoard({ board, activeId, onAdvance, onSelect, onEdit, onDelete }) {
   const canDelete = board.due.length + board.later.length > 1;
   const summary = questSummary(board);
 
@@ -84,6 +94,7 @@ export default function QuestBoard({ board, activeId, onAdvance, onSelect, onDel
               active={entry.habit.id === activeId}
               onAdvance={onAdvance}
               onSelect={onSelect}
+              onEdit={onEdit}
               onDelete={onDelete}
               canDelete={canDelete}
             />

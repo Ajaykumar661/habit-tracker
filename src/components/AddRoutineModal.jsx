@@ -3,10 +3,18 @@ import ModalOverlay from './ModalOverlay';
 import { WEEKDAY_NAMES } from '../lib/dates';
 import { DIFFICULTIES, HABIT_TYPES } from '../domain/schema';
 import { isMeasuredType, UNIT_SUGGESTIONS, SECONDS_PER_MINUTE } from '../domain/completion';
+import { editImpact, impactWarnings, nameTaken, FROZEN } from '../domain/editing';
 
-// Creating a quest. Kept as one short scroll of wooden controls rather than a
-// multi-step wizard — the whole point is that adding a routine stays a few
-// seconds' work.
+// Creating a quest, and changing one afterwards. Kept as one short scroll of
+// wooden controls rather than a multi-step wizard — the whole point is that
+// adding a routine stays a few seconds' work.
+//
+// Editing reuses the same form, with two differences. The kind of quest and
+// the start date are shown but locked, because past entries were recorded
+// against them. And before saving, the form replays the record under the
+// proposed settings and says plainly what would be lost — raising a goal
+// from 8 to 10 can silently end a streak, and that should never be a
+// surprise.
 
 const DIFFICULTY_LABEL = { easy: 'EASY', normal: 'NORMAL', hard: 'HARD' };
 const TYPE_LABEL = {
@@ -19,7 +27,10 @@ const TYPE_LABEL = {
 // stored exactly as typed.
 const DEFAULT_TARGET = { count: 8, duration: 30, numeric: 30 };
 
-export default function AddRoutineModal({ open, onClose, onCreate, today }) {
+export default function AddRoutineModal({
+  open, onClose, onCreate, onSave, today, editing = null, habits = [],
+}) {
+  const isEdit = !!editing;
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState(today);
   const [frequency, setFrequency] = useState('daily');
@@ -31,7 +42,20 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
   const nameRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (editing) {
+      setName(editing.name || '');
+      setStartDate(editing.startDate || today);
+      setFrequency(editing.schedule?.frequency || 'daily');
+      setWeekdays(editing.schedule?.weekdays || []);
+      setDifficulty(editing.difficulty || 'normal');
+      setType(editing.type || 'boolean');
+      // Duration is held in seconds and edited in minutes, matching create.
+      setTarget(String(editing.type === 'duration'
+        ? Math.round((editing.target || 0) / SECONDS_PER_MINUTE)
+        : (editing.target ?? 8)));
+      setUnit(editing.unit || '');
+    } else {
       setName('');
       setStartDate(today);
       setFrequency('daily');
@@ -40,15 +64,32 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
       setType('boolean');
       setTarget('8');
       setUnit('');
-      setTimeout(() => nameRef.current && nameRef.current.focus(), 50);
     }
-  }, [open, today]);
+    setTimeout(() => nameRef.current && nameRef.current.focus(), 50);
+  }, [open, today, editing]);
 
   const scheduleIsEmpty = frequency === 'weekly' && weekdays.length === 0;
   const measured = isMeasuredType(type);
   const targetNum = Number(target);
   const targetInvalid = measured && !(targetNum > 0);
-  const canSave = !scheduleIsEmpty && !targetInvalid;
+  const duplicate = nameTaken(habits, name, editing?.id);
+  const canSave = !scheduleIsEmpty && !targetInvalid && !duplicate;
+
+  // What the form is proposing, in the shape the domain expects.
+  const proposed = {
+    name: name.trim() || 'MY ROUTINE',
+    difficulty,
+    target: measured
+      ? (type === 'duration' ? targetNum * SECONDS_PER_MINUTE : targetNum)
+      : undefined,
+    unit: measured && type !== 'duration' ? unit.trim().toUpperCase() : undefined,
+    schedule: { frequency, weekdays: frequency === 'weekly' ? weekdays : [] },
+  };
+
+  // Only meaningful while editing: replay the record under the new settings.
+  const warnings = (isEdit && !targetInvalid && !scheduleIsEmpty)
+    ? impactWarnings(editImpact(editing, editing.records || {}, proposed, today))
+    : [];
 
   function chooseType(next) {
     setType(next);
@@ -64,20 +105,18 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
 
   function handleCreate() {
     if (!canSave) return;
-    onCreate(name.trim() || 'MY ROUTINE', startDate || today, {
-      type,
-      difficulty,
-      // Duration is typed in minutes but stored in seconds, so every engine
-      // compares like with like.
-      target: measured ? (type === 'duration' ? targetNum * SECONDS_PER_MINUTE : targetNum) : undefined,
-      unit: measured && type !== 'duration' ? unit.trim().toUpperCase() : undefined,
-      schedule: { frequency, weekdays: frequency === 'weekly' ? weekdays : [] },
-    });
+    if (isEdit) {
+      onSave(editing.id, proposed);
+      return;
+    }
+    // Duration is typed in minutes but stored in seconds, so every engine
+    // compares like with like.
+    onCreate(proposed.name, startDate || today, { ...proposed, type });
   }
 
   return (
     <ModalOverlay open={open} onClose={onClose}>
-      <div className="modal-title">NEW QUEST</div>
+      <div className="modal-title">{isEdit ? 'EDIT QUEST' : 'NEW QUEST'}</div>
       <div className="modal-body">
         <label className="field-label" htmlFor="newRoutineName">QUEST NAME</label>
         <input
@@ -102,11 +141,13 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
               aria-checked={type === value}
               className={`choice-btn${type === value ? ' active' : ''}`}
               onClick={() => chooseType(value)}
+              disabled={isEdit}
             >
               {TYPE_LABEL[value]}
             </button>
           ))}
         </div>
+        {isEdit && <p className="field-hint">{FROZEN.type}</p>}
 
         {measured && (
           <div className="target-row">
@@ -137,6 +178,7 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
           </div>
         )}
         {targetInvalid && <p className="field-hint warn">GOAL MUST BE AT LEAST 1</p>}
+        {duplicate && <p className="field-hint warn">A QUEST BY THAT NAME ALREADY EXISTS</p>}
 
         <span className="field-label">HOW OFTEN</span>
         <div className="choice-row" role="radiogroup" aria-label="How often">
@@ -195,11 +237,20 @@ export default function AddRoutineModal({ open, onClose, onCreate, today }) {
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          disabled={isEdit}
         />
+        {isEdit && <p className="field-hint">{FROZEN.startDate}</p>}
       </div>
+      {warnings.length > 0 && (
+        <div className="edit-warning" role="alert">
+          <div className="edit-warning-head">THIS CHANGES YOUR RECORD</div>
+          {warnings.map((line) => <p key={line}>{line}</p>)}
+        </div>
+      )}
+
       <div className="modal-actions">
         <button className="pixel-btn pixel-btn-small" type="button" onClick={handleCreate} disabled={!canSave}>
-          CREATE
+          {isEdit ? 'SAVE' : 'CREATE'}
         </button>
         <button className="pixel-btn pixel-btn-small" type="button" onClick={onClose}>CANCEL</button>
       </div>
