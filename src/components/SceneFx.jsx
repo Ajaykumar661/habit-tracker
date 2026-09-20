@@ -167,6 +167,12 @@ function SceneFx({ scene, streak = 0 }) {
         );
       })}
 
+      {(place.cat || []).map((it, i) => (
+        <span key={`cat${i}`} className="fx-cat fx-step-6"
+          style={{ ...strip('cat', it.w), ...spot(it, stripAspect('cat')),
+            animationDuration: `${it.dur}s` }} />
+      ))}
+
       {place.zzz.map((it, i) => (
         <span key={`z${i}`} className="fx-zzz"
           style={{ ...atlas(it.s, it.w), ...spot(it, atlasAspect(it.s)),
