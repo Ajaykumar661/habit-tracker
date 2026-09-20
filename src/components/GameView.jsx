@@ -1,25 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { wallSurface } from '../data/assets';
-import { useSceneLayout } from '../hooks/useSceneLayout';
+import { wallSurface, sceneFor } from '../data/assets';
+import { useSceneLayout, useIsNarrowViewport } from '../hooks/useSceneLayout';
+import BottomTabBar from './BottomTabBar';
 
 // The "game screen": a fixed, full-viewport room with the HUD around it.
 //   room art + tally wall   (world)
 //   vignette                (lighting only at the edges — centre untouched)
 //   HUD zones               (left routines, right record, bottom actions)
 // Slots that need to react to the layout are render props.
-export default function GameView({ scene, shake, topBar, title, wall, left, right, bottom }) {
+// `drawer`/`setDrawer` ('routines' | 'record' | null) are lifted to App so
+// the Android hardware back button can close whichever is open (see
+// App.jsx's backButton listener) without GameView knowing about Capacitor.
+export default function GameView({ envState, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
+  // Below the breakpoint, swap to the portrait room (archway sits above the
+  // wall there, so its own cover-scaled crop keeps the sky in frame — see
+  // scenesMobile in data/assets.js). Picked here, before useSceneLayout,
+  // since that hook's wall-centring math needs the right frame's own regions.
+  const narrowArt = useIsNarrowViewport();
+  const scene = sceneFor(envState, narrowArt);
   const { layout, bottomRef } = useSceneLayout(scene);
   const { canvas, collapsed, hudWidth, bottomTop, bottomCenter, bottomMaxWidth, wallInset } = layout;
-  const [drawer, setDrawer] = useState(null); // 'routines' | 'record' | null
 
-  useEffect(() => { if (!collapsed) setDrawer(null); }, [collapsed]);
+  useEffect(() => { if (!collapsed) setDrawer(null); }, [collapsed, setDrawer]);
   useEffect(() => {
     if (!drawer) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') setDrawer(null); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [drawer]);
+  }, [drawer, setDrawer]);
 
   const pct = (v, of) => `${(v / of) * 100}%`;
   const box = (r) => ({
@@ -61,11 +70,7 @@ export default function GameView({ scene, shake, topBar, title, wall, left, righ
       </motion.div>
 
       <div className="hud-top">
-        {topBar({
-          collapsed,
-          openRoutines: () => setDrawer('routines'),
-          openRecord: () => setDrawer('record'),
-        })}
+        {topBar({ collapsed })}
       </div>
 
       {collapsed && drawer && <div className="hud-backdrop" onClick={closeDrawer} aria-hidden="true" />}
@@ -80,6 +85,15 @@ export default function GameView({ scene, shake, topBar, title, wall, left, righ
       >
         {bottom}
       </div>
+
+      {collapsed && (
+        <BottomTabBar
+          active={drawer}
+          onRoutines={() => setDrawer((d) => (d === 'routines' ? null : 'routines'))}
+          onCalendar={() => { setDrawer(null); onOpenCalendar(); }}
+          onRecordAchievements={() => setDrawer((d) => (d === 'record' ? null : 'record'))}
+        />
+      )}
     </div>
   );
 }

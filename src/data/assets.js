@@ -10,10 +10,10 @@
 // overlay stays registered to the artwork at any display size.
 // ============================================================
 
-// All three rooms share one frame: their #FF00FF openings agree to within
-// 3px (day x518–1212 y204–665, dusk x519–1209 y203–665, night x518–1211
-// y203–665), so one region set — with a 4px bleed — registers all of them
-// and the tallies never shift when the time of day changes.
+// All three landscape rooms share one frame: their #FF00FF openings agree
+// to within 3px (day x518–1212 y204–665, dusk x519–1209 y203–665, night
+// x518–1211 y203–665), so one region set — with a 4px bleed — registers all
+// of them and the tallies never shift when the time of day changes.
 const ROOM = {
   width: 1672,
   height: 941,
@@ -25,19 +25,44 @@ const ROOM = {
   },
 };
 
+// Desktop/landscape rooms — used above the NARROW breakpoint (see
+// useSceneLayout's useIsNarrowViewport). No dawn artwork for this frame:
+// 05:00–08:00 falls back to the dusk room (warm low sun, lanterns still
+// lit), the closest of the three.
 export const scenes = {
   day:   { ...ROOM, lighting: 'day',   src: '/assets/environment/day-scene.png' },
   dusk:  { ...ROOM, lighting: 'dusk',  src: '/assets/environment/dusk-scene.png' },
   night: { ...ROOM, lighting: 'night', src: '/assets/environment/night-scene.png' },
 };
-
-// No dawn artwork: 05:00–08:00 uses the dusk room (warm low sun, lanterns
-// still lit), the closest of the three. Replace with a dawn-scene.png when
-// one exists — same framing, same magenta rectangle.
 const STAND_IN = { dawn: 'dusk' };
 
-export function sceneFor(envState) {
-  return scenes[envState] || scenes[STAND_IN[envState]] || scenes.day;
+// Mobile/portrait rooms — same wall opening, but the archway sits ABOVE it
+// instead of off to the side, so a phone's cover-scaled crop keeps the sky
+// (sun/moon/castle vista) in frame together with the wall. Own frame size
+// and region coordinates: this is a different image, not a crop of ROOM.
+// All four openings agree to within 1px (dawn x225-713 y463-1192, day
+// x225-714 y464-1192, dusk x225-713 y463-1192, night x225-713 y463-1191).
+const ROOM_MOBILE = {
+  width: 941,
+  height: 1672,
+  regions: {
+    wall: { x: 225, y: 463, w: 488, h: 729 },
+    // the stone lintel band between the archway's sill and the wall opening
+    title: { x: 245, y: 428, w: 450, h: 32 },
+  },
+};
+
+// All four times of day exist for this frame, so no stand-in needed here.
+export const scenesMobile = {
+  dawn:  { ...ROOM_MOBILE, lighting: 'dawn',  src: '/assets/environment/mobile-dawn-scene.png' },
+  day:   { ...ROOM_MOBILE, lighting: 'day',   src: '/assets/environment/mobile-day-scene.png' },
+  dusk:  { ...ROOM_MOBILE, lighting: 'dusk',  src: '/assets/environment/mobile-dusk-scene.png' },
+  night: { ...ROOM_MOBILE, lighting: 'night', src: '/assets/environment/mobile-night-scene.png' },
+};
+
+export function sceneFor(envState, mobile) {
+  const set = mobile ? scenesMobile : scenes;
+  return set[envState] || set[STAND_IN[envState]] || set.day;
 }
 
 /** One neutral stone panel shown through the wall opening. Tileable, so the

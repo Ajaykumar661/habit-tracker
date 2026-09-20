@@ -1,26 +1,41 @@
 import { motion } from 'framer-motion';
+import { IconPlus } from './icons';
 
-export default function TopBar({ muted, onToggleMute, onAddRoutine, collapsed, openRoutines, openRecord }) {
+// Mobile (collapsed): no bar background — just the one floating icon button
+// that doesn't belong to a bottom-tab destination (see BottomTabBar.jsx).
+// Mute is dropped for now; it'll live inside a gear/settings icon later.
+// Desktop is untouched — full text buttons, unconditionally.
+export default function TopBar({ muted, onToggleMute, onAddRoutine, collapsed }) {
+  if (collapsed) {
+    return (
+      <header className="topbar topbar-mobile">
+        <motion.button
+          type="button"
+          className="pixel-btn pixel-icon-btn"
+          onClick={onAddRoutine}
+          whileTap={{ scale: 0.88 }}
+          aria-label="New routine"
+          title="New routine"
+        >
+          <IconPlus />
+        </motion.button>
+      </header>
+    );
+  }
+
   return (
     <header className="topbar">
       <div className="topbar-left">
-        {collapsed && (
-          <button type="button" className="pixel-btn pixel-btn-tiny hud-drawer-btn" onClick={openRoutines}>ROUTINES</button>
-        )}
         <div className="topbar-title">
           <span className="brand-bracket">[</span>TALLY WALL<span className="brand-bracket">]</span>
         </div>
       </div>
       <div className="topbar-actions">
-        {collapsed && (
-          <button type="button" className="pixel-btn pixel-btn-tiny hud-drawer-btn" onClick={openRecord}>RECORD</button>
-        )}
         <motion.button type="button" className="pixel-btn pixel-btn-tiny" onClick={onToggleMute} whileTap={{ scale: 0.9 }}>
           SFX: {muted ? 'OFF' : 'ON'}
         </motion.button>
         <motion.button type="button" className="pixel-btn pixel-btn-tiny" onClick={onAddRoutine} whileTap={{ scale: 0.92 }}>
-          <span className="label-long">+ NEW ROUTINE</span>
-          <span className="label-short">+ NEW</span>
+          + NEW ROUTINE
         </motion.button>
       </div>
     </header>

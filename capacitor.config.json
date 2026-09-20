@@ -1,0 +1,23 @@
+{
+  "appId": "com.tallywall.app",
+  "appName": "Tally Wall",
+  "webDir": "dist",
+  "backgroundColor": "#0c0e0a",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0c0e0a"
+  },
+  "android": {
+    "backgroundColor": "#0c0e0a"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#0c0e0a",
+      "launchAutoHide": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#0c0e0a"
+    }
+  }
+}

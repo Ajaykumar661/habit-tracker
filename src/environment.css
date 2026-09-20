@@ -21,6 +21,15 @@
   --hud-iron: rgba(15, 16, 20, 0.8);
   --hud-wood-edge: rgba(138, 106, 58, 0.8);
   --hud-iron-edge: rgba(120, 122, 132, 0.6);
+  /* iOS notch / Dynamic Island / home-indicator, Android cutouts — 0 on
+     everything else. The room itself runs edge-to-edge; only the HUD insets. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  /* mobile bottom tab bar's own content height, excluding --safe-bottom
+     (which is added on top of this wherever the two are combined) */
+  --tabbar-h: 64px;
 }
 
 .app { max-width: none; padding: 0; margin: 0; }
@@ -159,7 +168,14 @@
 /* ============================================================
    HUD — top bar
    ============================================================ */
-.hud-top { position: absolute; top: 0; left: 0; right: 0; z-index: 20; }
+.hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+}
 .hud-top .topbar {
   margin: 0;
   padding: 8px 16px;
@@ -173,16 +189,35 @@
 .hud-top .topbar-title { font-size: 14px; letter-spacing: 3px; }
 .hud-top .topbar-actions { gap: 10px; }
 .hud-top .pixel-btn-tiny { font-size: 11px; padding: 9px 14px; }
-.label-short { display: none; }
+
+/* Mobile top bar: no bar/background at all — a lone icon button floating
+   directly on the scenery, not a strip covering the sky (see TopBar.jsx) */
+.hud-top .topbar-mobile {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  min-height: 0;
+  background: none;
+  border-bottom: 0;
+}
+.pixel-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  padding: 0;
+}
 
 /* ============================================================
    HUD — side panels (docked; drawers when collapsed)
    ============================================================ */
 .hud-panel {
   position: absolute;
-  top: 60px;
+  top: calc(60px + var(--safe-top));
   width: var(--hud-w);
-  max-height: calc(100vh - 74px);
+  max-height: calc(100vh - 74px - var(--safe-top));
   overflow-y: auto;
   z-index: 10;
   padding: 12px 12px 10px;
@@ -190,13 +225,13 @@
   scrollbar-color: rgba(138, 106, 58, 0.6) transparent;
 }
 .hud-left {
-  left: 14px;
+  left: calc(14px + var(--safe-left));
   background: var(--hud-wood);
   border: 2px solid var(--hud-wood-edge);
   box-shadow: 0 0 0 2px rgba(10, 7, 4, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
 }
 .hud-right {
-  right: 14px;
+  right: calc(14px + var(--safe-right));
   background: var(--hud-iron);
   border: 2px solid var(--hud-iron-edge);
   box-shadow: 0 0 0 2px rgba(6, 6, 8, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
@@ -237,20 +272,27 @@
 .hud-right .achievement-title { font-size: 7.5px; }
 .hud-right .achievement-days, .hud-right .achievement-date { font-size: 6.5px; }
 
-/* collapsed (tablet/phone): the same panels become drawers */
+/* collapsed (tablet/phone): the same panels become drawers, and stop above
+   the bottom tab bar (--tabbar-h) instead of running under it */
 .hud-panel.hud-drawer {
-  top: 0;
-  bottom: 0;
+  top: var(--safe-top);
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
   max-height: none;
   width: min(300px, 86vw);
   z-index: 30;
   padding-top: 18px;
   transition: transform 0.28s ease;
 }
-.hud-left.hud-drawer { left: 0; transform: translateX(-105%); }
-.hud-right.hud-drawer { right: 0; transform: translateX(105%); }
+.hud-left.hud-drawer { left: 0; padding-left: calc(12px + var(--safe-left)); transform: translateX(-105%); }
+.hud-right.hud-drawer { right: 0; padding-right: calc(12px + var(--safe-right)); transform: translateX(105%); }
 .hud-panel.hud-drawer.open { transform: translateX(0); }
-.hud-backdrop { position: absolute; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.5); }
+.hud-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+  z-index: 25;
+  background: rgba(0, 0, 0, 0.5);
+}
 
 /* ============================================================
    HUD — bottom: day + actions, then the quote, directly under the wall
@@ -289,6 +331,7 @@
 .hud-action .pixel-btn { white-space: nowrap; }
 .hud-action .pixel-btn-big { font-size: 12px; padding: 12px 20px; }
 .hud-action .pixel-btn-danger { font-size: 10px; padding: 11px 14px; }
+.hud-action .label-compact { display: none; }
 
 .hud-bottom .quote-plaque {
   margin: 0;
@@ -302,6 +345,8 @@
 .hud-bottom .quote-plaque { text-align: center; }
 .hud-bottom .quote-plaque-text { font-size: 10.5px; line-height: 1.9; color: #2e2013; }
 
+/* Desktop only (see the phone breakpoint below) — mobile uses the bottom
+   tab bar's Calendar tab instead. */
 .scroll-cue {
   font-family: inherit;
   font-size: 9px;
@@ -318,6 +363,42 @@
 .scroll-cue:hover { opacity: 1; }
 
 /* ============================================================
+   HUD — bottom tab bar (mobile only; see BottomTabBar.jsx). Fixed to the
+   viewport edge, so its height is reserved elsewhere (useSceneLayout's
+   TAB_BAR_H, and the drawer/backdrop `bottom` offsets above).
+   ============================================================ */
+.hud-tabbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 22;
+  height: calc(var(--tabbar-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  display: flex;
+  background: var(--hud-wood);
+  border-top: 2px solid var(--hud-wood-edge);
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.35);
+}
+.hud-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: inherit;
+  background: none;
+  border: 0;
+  color: var(--cream-dim);
+  cursor: pointer;
+}
+.hud-tab svg { width: 20px; height: 20px; }
+.hud-tab span { font-size: 7.5px; letter-spacing: 0.5px; }
+.hud-tab.active { color: var(--gold-text); }
+.hud-tab.active svg { filter: drop-shadow(0 0 4px rgba(224, 164, 88, 0.5)); }
+
+/* ============================================================
    DATA VIEW — below the game view; scrolls up over it
    ============================================================ */
 .game-spacer { height: 100vh; height: 100dvh; pointer-events: none; }
@@ -327,9 +408,9 @@
   background: #0f0c08;
   border-top: 2px solid rgba(138, 106, 58, 0.6);
   box-shadow: 0 -12px 24px rgba(0, 0, 0, 0.5);
-  padding: 28px 16px 48px;
+  padding: 28px 16px calc(48px + var(--safe-bottom));
 }
-.data-view { padding: 40px 24px 64px; }
+.data-view { padding-top: 40px; padding-left: 24px; padding-right: 24px; padding-bottom: calc(64px + var(--safe-bottom)); }
 .data-view .cell-log {
   max-width: 1160px;
   margin: 0 auto;
@@ -362,21 +443,27 @@
    Phones
    ============================================================ */
 @media (max-width: 700px) {
-  .hud-top .topbar-title { display: none; }
-  .label-long { display: none; }
-  .label-short { display: inline; }
-  .hud-top .topbar { padding: 6px 8px; min-height: 42px; }
-  .hud-top .topbar-actions { gap: 6px; }
-  .hud-top .pixel-btn-tiny { font-size: 9px; padding: 8px 9px; }
   .scene-routine-name { font-size: 11px; }
-  .hud-action { padding: 10px 12px 12px; gap: 10px; }
+  .hud-action { padding: 12px; gap: 12px; }
   .hud-action .day-counter { font-size: 18px; }
-  .hud-action .pixel-btn-big { font-size: 10px; padding: 10px 12px; }
-  .hud-action .pixel-btn-danger { font-size: 9px; padding: 9px 10px; }
+  /* "+ MARK TODAY COMPLETE" vs "UNDO TALLY" made one button dwarf the
+     other even at matched font-size/padding — swap to short labels (close
+     in length to "UNDO TALLY") and split the row evenly, so the pair reads
+     as one deliberate two-button bar instead of a big button + a small one. */
+  .hud-action .label-full { display: none; }
+  .hud-action .label-compact { display: inline; }
+  .hud-action .wall-actions { align-items: stretch; }
+  .hud-action .wall-actions .pixel-btn { flex: 1 1 0; min-width: 0; }
+  .hud-action .pixel-btn-big,
+  .hud-action .pixel-btn-danger { font-size: 10px; padding: 10px 8px; }
   .hud-bottom .quote-plaque { padding: 10px 14px; }
   .hud-bottom .quote-plaque-text { font-size: 9px; }
-  .data-view { padding: 28px 12px 48px; }
+  .data-view {
+    padding: 28px calc(12px + var(--safe-right)) calc(48px + var(--safe-bottom)) calc(12px + var(--safe-left));
+  }
   .data-view .cal-cell { font-size: 11px; }
+  /* superseded by the bottom tab bar's Calendar tab */
+  .scroll-cue { display: none; }
 }
 
 /* ============================================================

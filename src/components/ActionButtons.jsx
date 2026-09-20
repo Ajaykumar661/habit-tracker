@@ -27,7 +27,11 @@ const MarkButton = forwardRef(function MarkButton({ doneToday, onClick }, ref) {
       whileHover={doneToday ? undefined : { y: -2, filter: 'brightness(1.1)' }}
       whileTap={doneToday ? undefined : { scale: 0.9, y: 1 }}
     >
-      {doneToday ? 'TODAY COMPLETE' : '+ MARK TODAY COMPLETE'}
+      {/* Full text on desktop; a shorter label on mobile (CSS-toggled, see
+          .label-full/.label-compact) so this button and Undo land at a
+          similar natural width instead of one dwarfing the other. */}
+      <span className="label-full">{doneToday ? 'TODAY COMPLETE' : '+ MARK TODAY COMPLETE'}</span>
+      <span className="label-compact">{doneToday ? 'COMPLETE' : '+ COMPLETE'}</span>
     </motion.button>
   );
 });
