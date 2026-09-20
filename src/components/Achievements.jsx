@@ -1,25 +1,39 @@
+import { useMemo } from 'react';
+import Tray from './Tray';
 import AchievementBadge from './AchievementBadge';
-import { ACHIEVEMENTS } from '../lib/achievements';
-import { getAchievementDate } from '../lib/streaks';
+import { evaluateAchievements } from '../domain/achievements';
+import { getAchievementDate } from '../domain/streaks';
 
-export default function Achievements({ routine, stats }) {
+// The plaques, in a retractable tray.
+//
+// The catalogue is scored across every habit, so the plaques belong to the
+// keep rather than to whichever wall happens to be on screen. Only the
+// streak plaques can be dated, and only against the active wall.
+export default function Achievements({
+  routine, habits, completions, today, defaultOpen = true,
+}) {
+  const scored = useMemo(
+    () => evaluateAchievements(habits, completions, today),
+    [habits, completions, today],
+  );
+  const unlockedCount = scored.filter((a) => a.unlocked).length;
+
   return (
-    <div data-area="achievements">
-      <h2 className="panel-title">ACHIEVEMENTS</h2>
+    <Tray
+      area="achievements"
+      label="ACHIEVEMENTS"
+      count={`${unlockedCount}/${scored.length}`}
+      defaultOpen={defaultOpen}
+    >
       <div className="achievements-grid">
-        {ACHIEVEMENTS.map((a) => {
-          const unlocked = stats.bestStreak >= a.days;
-          const achievedDate = unlocked ? getAchievementDate(routine, a.days) : null;
-          return (
-            <AchievementBadge
-              key={a.days}
-              achievement={a}
-              unlocked={unlocked}
-              achievedDate={achievedDate}
-            />
-          );
-        })}
+        {scored.map((a) => (
+          <AchievementBadge
+            key={a.id}
+            achievement={a}
+            achievedDate={a.unlocked && a.days ? getAchievementDate(routine, a.days, today) : null}
+          />
+        ))}
       </div>
-    </div>
+    </Tray>
   );
 }

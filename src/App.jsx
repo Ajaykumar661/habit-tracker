@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAnimation, useReducedMotion } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import TopBar from './components/TopBar';
-import Sidebar from './components/Sidebar';
+import QuestBoard from './components/QuestBoard';
 import DayNumber from './components/DayNumber';
 import TallyWall from './components/TallyWall';
 import ActionButtons from './components/ActionButtons';
 import CellLog from './components/CellLog';
 import StatsPanel from './components/StatsPanel';
 import Achievements from './components/Achievements';
+import KingdomReport from './components/KingdomReport';
+import RallyStrip from './components/RallyStrip';
+import { getRecovery } from './domain/recovery';
 import Tooltip from './components/Tooltip';
 import ConfirmModal from './components/ConfirmModal';
 import AddRoutineModal from './components/AddRoutineModal';
+import StreakLostModal from './components/StreakLostModal';
+import DayDetail from './components/DayDetail';
 import SettingsSheet from './components/SettingsSheet';
 import GroupPopover from './components/GroupPopover';
 import AchievementPopup from './components/AchievementPopup';
@@ -20,11 +25,14 @@ import ParticleLayer from './components/ParticleLayer';
 import QuotePlaque from './components/QuotePlaque';
 import DevEnvSwitcher from './components/DevEnvSwitcher';
 import GameView from './components/GameView';
+import LevelPlaque from './components/LevelPlaque';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { SoundFX } from './lib/sound';
-import { todayStr } from './lib/dates';
+import { Music } from './lib/music';
 import { pickQuote } from './data/quotes';
+import { isScheduledOn } from './domain/schedule';
+import { isComplete } from './domain/completion';
 
 let particleSeq = 0;
 
@@ -38,6 +46,9 @@ export default function App() {
   const {
     routines, activeRoutine, stats,
     selectRoutine, addRoutine, deleteRoutine, addCompletion, removeCompletion,
+    acknowledgeStreakLoss, acknowledgeShield, today, progression, addProgress,
+    board, advanceQuest, habits, completions, notes, setNote, setBreakReason,
+    settings, setSetting,
   } = useTallyWallState();
 
   const envState = useEnvironmentState();
@@ -48,11 +59,13 @@ export default function App() {
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupDates, setGroupDates] = useState(null);
+  const [openDay, setOpenDay] = useState(null);
   const [drawer, setDrawer] = useState(null); // 'routines' | 'record' | null — the mobile HUD drawer
   const [achievement, setAchievement] = useState(null);
   const [particles, setParticles] = useState([]);
   const [muted, setMuted] = useState(SoundFX.isMuted());
   const [freshDate, setFreshDate] = useState(null);
+  const [shieldNotice, setShieldNotice] = useState(null);
   const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }));
 
   const markBtnRef = useRef(null);
@@ -64,7 +77,32 @@ export default function App() {
   const appControls = useAnimation();
   const reducedMotion = useReducedMotion();
 
-  const doneToday = activeRoutine.completed.includes(todayStr());
+  const doneToday = activeRoutine.completed.includes(today);
+  const todayRecord = activeRoutine.records?.[today];
+
+  // A lapsed run is worth naming, but only once and only if it was long
+  // enough to feel like something. Below this it's just noise.
+  const MOURN_MIN_DAYS = 3;
+  const { brokenStreak } = stats;
+  const showStreakLost = !!brokenStreak
+    && brokenStreak.days >= MOURN_MIN_DAYS
+    && activeRoutine.mournedStreakEnd !== brokenStreak.endedOn;
+
+  // A streak worth keeping, still unmarked, and the day is nearly gone.
+  // Recomputed whenever the clock is re-checked (envState ticks each minute),
+  // so it appears on its own rather than only after an interaction.
+  // Nothing is at risk on a day the habit was never due — saying otherwise
+  // would nag the user into "rescuing" a streak that was never in danger.
+  const atRisk = !doneToday && stats.currentStreak > 0
+    && isScheduledOn(activeRoutine, today)
+    && new Date().getHours() >= 19 && envState !== null;
+
+  // The rally, in the days after a break. Derived from the same stats the
+  // wall already computed, so it costs nothing extra.
+  const recovery = useMemo(
+    () => getRecovery(activeRoutine, today, stats),
+    [activeRoutine, today, stats],
+  );
 
   // Ambient quote refresh: fires on load, on time-of-day change, and on any
   // streak change that celebrate() didn't already give a special quote to.
@@ -79,6 +117,53 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [envState, stats.currentStreak]);
 
+  // Background music follows the time of day. It can only actually start
+  // from a user gesture (every browser blocks audio before that), so the
+  // first interaction arms it and whatever is `wanted` begins then.
+  useEffect(() => { Music.playFor(envState); }, [envState]);
+
+  useEffect(() => {
+    // Not `once`: a browser may refuse the first gesture, and giving up
+    // after one attempt leaves the whole session silent with no way back.
+    // Music.arm() is idempotent, so we keep offering gestures until it
+    // reports that sound is actually coming out, then stop listening.
+    const arm = () => {
+      Music.arm();
+      SoundFX.resume();
+      if (Music.isArmed()) detach();
+    };
+    const opts = { passive: true };
+    const events = ['pointerdown', 'touchend', 'keydown', 'click'];
+    const detach = () => events.forEach((e) => window.removeEventListener(e, arm, opts));
+    events.forEach((e) => window.addEventListener(e, arm, opts));
+
+    const onVis = () => Music.setSuspended(document.hidden);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      detach();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+  // A spent shield is a historical fact, not a live event — it is derived
+  // from the record every time. To announce it exactly once, the habit
+  // remembers which spend it has already shown. The notice is a line of
+  // text, deliberately not a modal: the streak survived, which needs
+  // acknowledging, not celebrating.
+  const lastShield = stats.shields?.spent?.length
+    ? stats.shields.spent[stats.shields.spent.length - 1]
+    : null;
+
+  useEffect(() => {
+    if (!lastShield || activeRoutine.acknowledgedShield === lastShield.date) return undefined;
+    setShieldNotice(lastShield);
+    acknowledgeShield(lastShield.date);
+    SoundFX.open();
+    const t = setTimeout(() => setShieldNotice(null), 7000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastShield?.date, activeRoutine.id]);
+
   // Android hardware back button: close whatever's open (native only — a
   // browser has no such button to listen for). Registering a listener hands
   // Capacitor's own back/exit behavior to us entirely, so the last case must
@@ -86,9 +171,11 @@ export default function App() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
     const sub = CapApp.addListener('backButton', () => {
+      if (showStreakLost) { acknowledgeStreakLoss(brokenStreak.endedOn); return; }
       if (achievement) { setAchievement(null); return; }
       if (confirm) { handleConfirmNo(); return; }
       if (groupDates) { handleCloseGroup(); return; }
+      if (openDay) { SoundFX.close(); setOpenDay(null); return; }
       if (settingsOpen) { SoundFX.close(); setSettingsOpen(false); return; }
       if (addRoutineOpen) { SoundFX.close(); setAddRoutineOpen(false); return; }
       if (drawer) { setDrawer(null); return; }
@@ -96,7 +183,7 @@ export default function App() {
     });
     return () => { sub.then((h) => h.remove()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, drawer]);
+  }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, openDay, drawer, showStreakLost]);
 
   function handleRerollQuote() {
     setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }));
@@ -185,9 +272,22 @@ export default function App() {
     }
   }
 
+  function handleAddProgress(delta) {
+    const rect = markBtnRef.current?.getBoundingClientRect();
+    const result = addProgress(today, delta);
+    if (result && rect) celebrate(result, rect, today);
+    else if (delta > 0) SoundFX.click();
+  }
+
+  function handleAdvanceQuest(habitId) {
+    const rect = markBtnRef.current?.getBoundingClientRect();
+    const result = advanceQuest(habitId, today);
+    if (result) celebrate(result, rect || { left: 0, top: 0, width: 0, height: 0 }, today);
+    else SoundFX.click();
+  }
+
   function handleMarkToday() {
     const rect = markBtnRef.current.getBoundingClientRect();
-    const today = todayStr();
     const result = addCompletion(today);
     celebrate(result, rect, today);
   }
@@ -197,8 +297,34 @@ export default function App() {
     setConfirm({
       title: 'UNDO TALLY',
       body: 'Remove today’s tally mark from the wall?',
-      onYes: () => { removeCompletion(todayStr()); SoundFX.undo(); },
+      onYes: () => { removeCompletion(today); SoundFX.undo(); },
     });
+  }
+
+  function handleOpenDay(dateStr) {
+    SoundFX.open();
+    setOpenDay(dateStr);
+  }
+
+  /**
+   * Toggle one habit on an arbitrary day, from inside the chronicle.
+   *
+   * Whole-day toggle rather than the quest board's single step: filling in
+   * the past means "I did this and forgot to log it", so tapping six times
+   * to retro-fill a counter would be busywork.
+   */
+  function handleToggleHabitOn(habitId) {
+    if (!openDay) return;
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+    if (isComplete(habit, completions[habitId]?.[openDay])) {
+      removeCompletion(openDay, habitId);
+      SoundFX.undo();
+      return;
+    }
+    const result = addCompletion(openDay, {}, habitId);
+    if (result && openDay === today) celebrate(result, { left: 0, top: 0, width: 0, height: 0 }, openDay);
+    else SoundFX.tally();
   }
 
   function handleToggleDay(dateStr, cellEl) {
@@ -223,8 +349,8 @@ export default function App() {
     });
   }
 
-  function handleCreateRoutine(name, startDate) {
-    addRoutine(name, startDate);
+  function handleCreateRoutine(name, startDate, options) {
+    addRoutine(name, startDate, options);
     setAddRoutineOpen(false);
     setCalendarCursor(startOfMonth());
     SoundFX.tally();
@@ -268,8 +394,6 @@ export default function App() {
         onOpenCalendar={scrollToLog}
         topBar={({ collapsed }) => (
           <TopBar
-            muted={muted}
-            onToggleMute={handleToggleMute}
             onAddRoutine={() => { SoundFX.open(); setAddRoutineOpen(true); }}
             onOpenSettings={() => { SoundFX.open(); setSettingsOpen(true); }}
             collapsed={collapsed}
@@ -288,26 +412,48 @@ export default function App() {
           />
         )}
         left={({ closeDrawer }) => (
-          <Sidebar
-            routines={routines}
-            activeRoutine={activeRoutine}
+          <QuestBoard
+            board={board}
+            activeId={activeRoutine.id}
+            onAdvance={handleAdvanceQuest}
             onSelect={(id) => { handleSelectRoutine(id); closeDrawer(); }}
             onDelete={handleDeleteRoutine}
           />
         )}
         right={() => (
           <>
-            <StatsPanel stats={stats} />
-            <Achievements routine={activeRoutine} stats={stats} />
+            <LevelPlaque progression={progression} />
+            <StatsPanel stats={stats} progression={progression} />
+            <Achievements
+              routine={activeRoutine}
+              habits={habits}
+              completions={completions}
+              today={today}
+            />
+            <KingdomReport habits={habits} completions={completions} today={today} />
           </>
         )}
         bottom={(
           <>
             <div className="hud-action">
               <DayNumber stats={stats} />
+              {shieldNotice && (
+                <p className="shield-notice" role="status">
+                  A SHIELD PROTECTED THE STREAK
+                </p>
+              )}
+              {atRisk && (
+                <p className="streak-risk" role="status">
+                  {stats.currentStreak}-DAY STREAK ENDS AT MIDNIGHT
+                </p>
+              )}
+              <RallyStrip recovery={recovery} />
               <ActionButtons
+                routine={activeRoutine}
+                record={todayRecord}
                 doneToday={doneToday}
                 onMarkToday={handleMarkToday}
+                onAddProgress={handleAddProgress}
                 onUndo={handleUndoToday}
                 markBtnRef={markBtnRef}
               />
@@ -324,10 +470,14 @@ export default function App() {
         <CellLog
           routine={activeRoutine}
           stats={stats}
+          today={today}
+          shieldedDates={stats.shields?.shieldedDates}
           cursor={calendarCursor}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
-          onToggleDay={handleToggleDay}
+          onOpenDay={handleOpenDay}
+          notes={notes}
+          onSetBreakReason={setBreakReason}
           onTooltip={showTooltip}
           onMoveTooltip={moveTooltip}
           onHideTooltip={hideTooltip}
@@ -341,12 +491,33 @@ export default function App() {
         open={addRoutineOpen}
         onClose={() => { SoundFX.close(); setAddRoutineOpen(false); }}
         onCreate={handleCreateRoutine}
+        today={today}
       />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => { SoundFX.close(); setSettingsOpen(false); }}
         muted={muted}
         onToggleMute={handleToggleMute}
+        settings={settings}
+        onSetSetting={setSetting}
+      />
+      {showStreakLost && (
+        <StreakLostModal
+          broken={brokenStreak}
+          bestStreak={stats.bestStreak}
+          onDismiss={() => { SoundFX.close(); acknowledgeStreakLoss(brokenStreak.endedOn); }}
+        />
+      )}
+      <DayDetail
+        open={!!openDay}
+        date={openDay}
+        habits={habits}
+        completions={completions}
+        notes={notes}
+        today={today}
+        onClose={() => { SoundFX.close(); setOpenDay(null); }}
+        onToggleHabit={handleToggleHabitOn}
+        onSaveNote={setNote}
       />
       <AchievementPopup achievement={achievement} />
       <ParticleLayer particles={particles} onDone={removeParticle} />

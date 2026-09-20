@@ -33,6 +33,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 GLOW_SHEET = ROOT / 'art-src' / 'fx-glow-sheet.png'
 SOLID_SHEET = ROOT / 'art-src' / 'fx-solid-sheet.png'
+CAT_SHEET = ROOT / 'art-src' / 'fx-cat-sheet.png'
 OUT_DIR = ROOT / 'public/assets/fx'
 MANIFEST = ROOT / 'src/data/sceneFx.json'
 
@@ -82,6 +83,9 @@ BIRD_ROW_Y = (628, 726)
 BIRD_COLS = [(49, 134), (149, 234), (255, 339), (350, 432), (446, 525)]
 BFLY_ORANGE = [(602, 691), (710, 793), (815, 894), (912, 1002)]
 BFLY_BLUE = [(1079, 1172), (1190, 1274), (1295, 1377), (1396, 1498)]
+
+# The sleeping cat is its own sheet: 6 frames of one slow breath.
+CAT_COLS = [(49, 345), (403, 700), (759, 1056), (1115, 1412), (1471, 1768), (1827, 2124)]
 
 
 # ------------------------------------------------------------------ keying --
@@ -198,6 +202,9 @@ FRAMES = {
         'shafts': [(70, 120, 300, 470)],
         'lanterns': [(466, 367, 44), (1334, 367, 44), (47, 598, 42)],
         'cat': (1558, 606),
+        # The painted cat is already in the clear here (it sits below the
+        # record panel), so no sprite is needed — the Zs anchor to the art.
+        'cat_sprite': None,
         'scale': 1.0,
     },
     'portrait': {
@@ -211,6 +218,11 @@ FRAMES = {
         'shafts': [],                         # no room either side of the wall
         'lanterns': [(102, 772, 58), (837, 772, 58), (50, 1203, 50)],
         'cat': (748, 1208),
+        # On a phone the action panel covers x172-766 / y1107-1474, which is
+        # exactly where the painted cat lies. The breathing sprite goes in the
+        # clear column right of it instead, and the Zs follow it there.
+        # (x, bottom-y, width) — the slab sits on that baseline.
+        'cat_sprite': (810, 1392, 86),
         'scale': 1.45,                        # sky window is bigger in this frame
     },
 }
@@ -378,6 +390,18 @@ def main():
         manifest['strips'][f'butterfly-{tone}'] = make_strip(
             [tight(solid[ry0:ry1, c0:c1]) for c0, c1 in cols], f'butterfly-{tone}', 'center')
 
+    cat = solid_rgba(np.array(Image.open(CAT_SHEET).convert('RGB')))
+    raw = [cat[:, c0:c1] for c0, c1 in CAT_COLS]
+    # A per-frame tight crop would let the slab jitter as the cat's outline
+    # changes; one shared box keeps it nailed down and only the breath moves.
+    boxes = []
+    for f in raw:
+        ys, xs = np.nonzero(f[..., 3] > 6)
+        boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes)
+    x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
+    manifest['strips']['cat'] = make_strip([f[y0:y1, x0:x1] for f in raw], 'cat', 'bottom')
+
     # ---- static atlas -----------------------------------------------------
     statics = {}
     for name, cfg in SOLID_ROWS.items():
@@ -541,7 +565,17 @@ def main():
             out['flames'] = ([{'k': recipe['flame'], 'x': lx, 'y': ly, 'w': lw}
                               for lx, ly, lw in geo['lanterns']] if recipe.get('flame') else [])
 
+            out['cat'] = []
             cx, cy = geo['cat']
+            if geo['cat_sprite']:
+                sx, sy, sw = geo['cat_sprite']
+                cell = manifest['strips']['cat']
+                sh = sw * cell['ch'] / cell['cw']
+                out['cat'] = [{'x': sx, 'y': round(sy - sh / 2, 1), 'w': sw,
+                               'dur': 4.6}]
+                # the sprite's head is toward its left end
+                cx, cy = round(sx - sw * 0.16, 1), round(sy - sh * 0.82, 1)
+
             out['zzz'] = [{'s': f'zzz-{i}', 'x': cx, 'y': cy, 'w': sized(13 + i * 5),
                            'dur': 5.4, 'delay': round(-i * 1.8, 2),
                            'rise': round(70 * S, 1)} for i in range(3)]
@@ -616,6 +650,8 @@ def render_preview(scene_rgb, placements, manifest, path):
         h = round(it['w'] * s['ch'] / s['cw'])
         sp = sp.resize((it['w'], h), Image.LANCZOS)
         canvas.alpha_composite(sp, (round(it['x'] - it['w'] / 2), round(it['y'] + 2 - h)))
+    for it in placements.get('cat', []):
+        paste(strip_frame('cat', 2), it['x'], it['y'], it['w'])
     for it in placements.get('zzz', []):
         paste(static_sprite(it['s']), it['x'] + it['w'] * 0.6, it['y'] - it['rise'] * 0.5, it['w'])
     canvas.convert('RGB').save(path)

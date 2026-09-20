@@ -94,6 +94,7 @@
 .fx-step-3  { background-size: 300% 100%; }
 .fx-step-4  { background-size: 400% 100%; }
 .fx-step-5  { background-size: 500% 100%; }
+.fx-step-6  { background-size: 600% 100%; }
 .fx-step-11 { background-size: 1100% 100%; }
 @keyframes fx-f3 {
   0%, 33.32%     { background-position-x: 0%; }
@@ -112,6 +113,14 @@
   40%, 59.99%    { background-position-x: 50%; }
   60%, 79.99%    { background-position-x: 75%; }
   80%, 100%      { background-position-x: 100%; }
+}
+@keyframes fx-f6 {
+  0%, 16.65%     { background-position-x: 0%; }
+  16.66%, 33.32% { background-position-x: 20%; }
+  33.33%, 49.99% { background-position-x: 40%; }
+  50%, 66.65%    { background-position-x: 60%; }
+  66.66%, 83.32% { background-position-x: 80%; }
+  83.33%, 100%   { background-position-x: 100%; }
 }
 @keyframes fx-f11 {
   0%, 9.08%      { background-position-x: 0%; }
@@ -261,6 +270,10 @@
 }
 
 /* ---- the sleeping cat ------------------------------------------------ */
+/* One slow breath, held a whole frame at a time. The slab is fixed in the
+   artwork, so only the body rises and falls. */
+.fx-cat { animation-name: fx-f6; animation-timing-function: steps(1, end); }
+
 .fx-zzz {
   animation-name: fx-zzz;
   animation-duration: var(--dur, 5.4s);
@@ -286,6 +299,7 @@
    movement is dropped. Flames keep cycling — a frozen fire reads as broken. */
 @media (prefers-reduced-motion: reduce) {
   .fx-cloud, .fx-mist, .fx-mote, .fx-star, .fx-shaft, .fx-fglow { animation: none; }
+  .fx-cat { animation: none; }
   .fx-traveller, .fx-ember, .fx-shoot, .fx-zzz, .fx-firefly { display: none; }
 }
 
@@ -421,6 +435,368 @@
   background: none;
   border-bottom: 0;
 }
+/* ---- the day's quest board ------------------------------------------- */
+.quest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.quest-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(138, 106, 58, 0.3);
+}
+.quest-row.active { border-color: #c79a55; background: rgba(138, 106, 58, 0.4); }
+.quest-row.done .quest-name-text { color: var(--green); }
+.quest-row.not-due { opacity: 0.55; }
+
+.quest-check {
+  flex: 0 0 auto;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: var(--wall);
+  border: 1px solid rgba(138, 106, 58, 0.5);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+}
+/* Fills from the bottom, like a vessel — the quest's own progress. */
+.quest-check-fill {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: var(--amber);
+  transition: height 0.18s ease-out;
+}
+.quest-row.done .quest-check { border-color: var(--green-dim); }
+.quest-row.done .quest-check-fill { background: var(--green); }
+.quest-check:hover { border-color: var(--hud-wood-edge); }
+@media (prefers-reduced-motion: reduce) { .quest-check-fill { transition: none; } }
+.quest-check:focus-visible, .quest-name:focus-visible, .tray-handle:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+
+.quest-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-family: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.quest-name-text {
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: #cbbf9f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quest-meta { font-size: 6.5px; letter-spacing: 0.5px; color: var(--cream-dim); }
+
+.quest-summary {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(138, 106, 58, 0.6);
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+}
+.quest-summary.complete { color: var(--gold-text); text-shadow: 1px 1px 0 #000; }
+
+.quest-later-label {
+  margin: 10px 0 5px;
+  font-size: 6.5px;
+  letter-spacing: 1px;
+  color: var(--amber-dim);
+}
+
+/* ---- retractable tray ------------------------------------------------- */
+.tray-handle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+  /* .panel-title supplies the rest; only the button reset belongs here */
+  border-width: 0 0 1px 0;
+}
+/* A drawn triangle, not a character — the pixel font has no caret. */
+.tray-caret {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.18s ease-out;
+}
+.tray.open .tray-caret { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .tray-caret { transition: none; } }
+.tray-label { flex: 1 1 auto; }
+.tray-count { flex: 0 0 auto; font-size: 7px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.tray:not(.open) .tray-handle { margin-bottom: 0; }
+
+/* the rally strip, on the stone action plaque */
+.hud-action .rally {
+  background: rgba(10, 8, 5, 0.5);
+  border-color: rgba(138, 106, 58, 0.7);
+  margin: 0 0 7px;
+}
+.hud-action .rally.won { border-color: rgba(143, 174, 116, 0.8); }
+.hud-action .rally-line { color: #cbbf9f; }
+
+/* ---- measured quests: a filling channel carved into the plaque -------- */
+.hud-action .wall-actions.measured {
+  flex-direction: column;
+  align-items: stretch;
+  /* .hud-action centres its children, so a column has to claim the width
+     back or the bar reads as a stray sliver rather than part of the plaque */
+  align-self: stretch;
+  gap: 10px;
+}
+.quest-counter { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+.quest-counter-head { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.quest-counter-value { font-size: 15px; color: var(--gold-text); text-shadow: 2px 2px 0 #000; letter-spacing: 1px; }
+.quest-counter-unit { font-size: 8px; color: var(--cream-dim); letter-spacing: 1px; }
+.quest-counter.complete .quest-counter-value { color: var(--green); }
+
+.quest-bar {
+  height: 12px;
+  background: #16180f;
+  border: 2px solid var(--border-dark);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.quest-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--amber) 0 6px, #c98f47 6px 8px);
+}
+.quest-counter.complete .quest-bar-fill {
+  background: repeating-linear-gradient(90deg, var(--green) 0 6px, #7a9a62 6px 8px);
+}
+
+.quest-counter-actions { display: flex; gap: 8px; justify-content: center; }
+.quest-step { min-width: 62px; }
+.quest-step.add { background: var(--green); box-shadow: inset -3px -4px 0 0 var(--green-dim), inset 3px 3px 0 0 #c8dcb8, 3px 3px 0 0 var(--shadow-dark); }
+.quest-step:disabled { opacity: 0.45; }
+
+.target-row { display: flex; gap: 10px; }
+.target-field { flex: 1 1 0; min-width: 0; display: block; }
+
+/* ---- rank, as a brass plaque in the ledger ---------------------------- */
+.level-plaque {
+  margin-bottom: 14px;
+  padding: 9px 10px 8px;
+  background: rgba(138, 106, 58, 0.16);
+  border: 1px solid var(--bronze);
+  box-shadow: inset 0 0 0 1px rgba(255, 245, 215, 0.06);
+}
+.level-plaque-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.level-title { font-size: 10px; color: var(--gold-text); letter-spacing: 2px; text-shadow: 1px 1px 0 #000; }
+.level-number { font-size: 8px; color: var(--cream-dim); letter-spacing: 1px; }
+.level-bar {
+  height: 7px;
+  margin: 7px 0 5px;
+  background: #16180f;
+  border: 1px solid var(--border-dark);
+  overflow: hidden;
+}
+.level-bar-fill { height: 100%; background: linear-gradient(180deg, #f2c46b 0%, var(--amber) 55%, #a9762f 100%); }
+.level-plaque-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 6.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.level-perfect { color: var(--green); }
+.level-total { margin-top: 3px; font-size: 6.5px; color: var(--amber-dim); letter-spacing: 0.5px; }
+
+/* Schedule + difficulty pickers — small wooden plaques, not toggles */
+.choice-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.choice-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 9px 6px;
+  color: var(--parchment);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(138, 106, 58, 0.45);
+  cursor: pointer;
+}
+.choice-btn:hover { border-color: var(--hud-wood-edge); color: var(--gold-text); }
+.choice-btn.active {
+  background: rgba(138, 106, 58, 0.55);
+  border-color: #c79a55;
+  color: #fff3d6;
+}
+.choice-btn:focus-visible, .weekday-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+.weekday-row { display: flex; gap: 4px; margin: 6px 0 4px; }
+.weekday-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  font-family: inherit;
+  font-size: 9px;
+  color: var(--cream-dim);
+  background: var(--wall);
+  border: 1px solid rgba(138, 106, 58, 0.45);
+  cursor: pointer;
+}
+.weekday-btn.active { background: var(--amber); color: var(--bg-deep); border-color: #c79a55; }
+
+.field-hint { margin: 2px 0 6px; font-size: 7.5px; letter-spacing: 0.5px; color: var(--cream-dim); }
+.field-hint.warn { color: var(--red); }
+
+.calendar-schedule {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+}
+
+/* ---- streak history: past runs, as ledger entries ---------------------- */
+.streak-history { margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(138, 106, 58, 0.5); }
+.streak-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.streak-row { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(138, 106, 58, 0.28); }
+.streak-row.live { border-color: #c79a55; background: rgba(138, 106, 58, 0.22); }
+.streak-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  font-family: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.streak-head:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.streak-days { font-size: 13px; color: var(--gold-text); }
+.streak-row.live .streak-days { color: var(--green); }
+.streak-unit { font-size: 7px; letter-spacing: 1px; color: var(--cream-dim); }
+.streak-when { margin-left: auto; font-size: 7px; letter-spacing: 0.5px; color: var(--cream-dim); }
+
+.streak-detail { padding: 0 9px 9px; }
+.streak-range { font-size: 8px; color: #cbbf9f; letter-spacing: 0.5px; }
+.streak-broken { margin-top: 4px; font-size: 7.5px; color: var(--red); letter-spacing: 0.5px; }
+.streak-reason-label { margin: 9px 0 5px; font-size: 7px; letter-spacing: 1px; color: var(--cream-dim); }
+.streak-reasons { display: flex; flex-wrap: wrap; gap: 4px; }
+.streak-reasons .choice-btn { flex: 0 1 auto; padding: 6px 7px; font-size: 7px; }
+.streak-reason-note { margin: 10px 0 0; font-size: 7px; line-height: 1.8; color: var(--cream-dim); }
+
+/* ---- the chronicle: one day, opened from the calendar ------------------ */
+.day-date { margin: 4px 0 0; text-align: center; font-size: 8px; letter-spacing: 1px; color: var(--cream-dim); }
+.day-perfect {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--gold-text);
+  text-shadow: 1px 1px 0 #000;
+}
+.day-body { margin-top: 14px; }
+.day-heading {
+  margin: 12px 0 5px;
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  color: var(--cream-dim);
+}
+.day-heading.done { color: var(--green); }
+.day-heading.missed { color: var(--red); }
+.day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.day-list.muted { opacity: 0.55; }
+.day-line { display: flex; align-items: center; gap: 8px; }
+.day-line-check {
+  flex: 0 0 auto;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: var(--wall);
+  border: 1px solid rgba(138, 106, 58, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+}
+.day-line-check:disabled { cursor: default; opacity: 0.5; }
+.day-line.done .day-line-check { border-color: var(--green-dim); }
+.day-line.done .quest-check-fill { background: var(--green); }
+.day-line.missed .day-line-check { border-color: var(--red-dim); }
+.day-line-name { flex: 1 1 auto; min-width: 0; font-size: 8px; color: #cbbf9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-line-meta { flex: 0 0 auto; font-size: 7px; color: var(--cream-dim); }
+.day-empty { margin: 14px 0; text-align: center; font-size: 8px; color: var(--cream-dim); }
+.day-xp {
+  display: flex;
+  justify-content: space-between;
+  margin: 14px 0 10px;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(138, 106, 58, 0.6);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+}
+.day-xp span { color: var(--gold-text); }
+.day-note { resize: vertical; line-height: 1.8; }
+
+/* Streak-lost modal */
+.streak-lost-title { color: var(--red); }
+.streak-lost-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 4px;
+}
+.streak-lost-days { font-size: 34px; color: var(--red); text-shadow: 2px 2px 0 #000; }
+.streak-lost-unit { font-size: 11px; color: var(--cream-dim); letter-spacing: 2px; }
+.streak-lost-when {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+}
+.streak-lost-line {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.9;
+  color: var(--parchment-ink);
+  background: #d9c89b;
+  border: 2px solid #2e2013;
+  box-shadow: 0 0 0 2px var(--bronze), inset 0 0 0 2px rgba(255, 245, 215, 0.35);
+}
+.streak-lost-best {
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--green);
+}
+/* the way forward, sized below the mourning but above the button */
+.streak-lost-rally {
+  margin: 6px 0 2px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 7.5px;
+  line-height: 1.7;
+  letter-spacing: 1px;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+}
+
 /* Settings sheet */
 .settings-row {
   display: flex;
@@ -433,6 +809,22 @@
   margin: 14px 0 6px;
 }
 .settings-row .pixel-btn { display: inline-flex; align-items: center; gap: 6px; }
+.settings-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 8.5px;
+  color: var(--cream-dim);
+  letter-spacing: 1px;
+  margin: 0 0 6px;
+}
+.settings-slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  accent-color: var(--amber);
+  cursor: pointer;
+}
 .settings-section { border-top: 1px dashed rgba(138, 106, 58, 0.5); margin-top: 14px; padding-top: 12px; }
 .settings-label { font-size: 9px; color: var(--gold-text); letter-spacing: 1px; margin-bottom: 8px; }
 .settings-help { font-size: 8.5px; line-height: 1.9; color: var(--cream-dim); margin: 0 0 10px; }
@@ -507,11 +899,25 @@
 .hud-right .stats-list { gap: 7px; }
 .hud-right .stats-list dt { font-size: 7.5px; color: #b9bbc4; }
 .hud-right .stats-list dd { font-size: 10px; color: var(--gold-text); }
-.hud-right [data-area="achievements"] { margin-top: 14px; }
-.hud-right .achievements-grid { gap: 5px; }
+.hud-right [data-area="achievements"], .hud-right [data-area="report"] { margin-top: 14px; }
+/* The rail already scrolls; a second scroller inside it would trap the
+   wheel over the plaques. The tray retracts instead. */
+.hud-right .achievements-grid { gap: 5px; max-height: none; overflow: visible; padding-right: 0; }
 .hud-right .achievement-badge { padding: 5px 6px; gap: 8px; border-width: 1px; }
 .hud-right .achievement-title { font-size: 7.5px; }
 .hud-right .achievement-days, .hud-right .achievement-date { font-size: 6.5px; }
+
+/* the herald's report, at ledger scale */
+.hud-right .report-verdict { font-size: 7.5px; color: var(--gold-text); }
+.hud-right .report-range { font-size: 6.5px; }
+.hud-right .week-chart { border-color: rgba(138, 106, 58, 0.4); }
+.hud-right .week-bar-track { height: 36px; background: rgba(255, 255, 255, 0.05); border-color: rgba(138, 106, 58, 0.35); }
+.hud-right .week-bar-fill { background: rgba(138, 106, 58, 0.75); }
+.hud-right .week-bar.best .week-bar-fill { background: var(--gold-text); }
+.hud-right .week-bar-label { font-size: 6px; color: #b9bbc4; }
+.hud-right .pattern-text { font-size: 7px; color: #cbbf9f; }
+.hud-right .pattern-sample { font-size: 6px; color: #8d8f98; }
+.hud-right .report-waiting { font-size: 7px; color: #b9bbc4; }
 
 /* collapsed (tablet/phone): the same panels become drawers, and stop above
    the bottom tab bar (--tabbar-h) instead of running under it */
@@ -568,6 +974,29 @@
   color: var(--gold-text);
   text-shadow: 2px 2px 0 #000;
 }
+/* A shield was spent to save the run. Stated, not celebrated. */
+.shield-notice {
+  margin: 0;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #9fc4e8;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Shown only when a live streak is still unmarked late in the day. */
+.streak-risk {
+  margin: 0;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-align: center;
+  color: var(--red);
+  text-shadow: 1px 1px 0 #000;
+  animation: risk-pulse 2.4s ease-in-out infinite;
+}
+@keyframes risk-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .streak-risk { animation: none; opacity: 1; } }
+
 .hud-action .wall-actions { display: flex; justify-content: center; gap: 10px; align-items: center; padding: 0; background: none; border: 0; }
 .hud-action .pixel-btn { white-space: nowrap; }
 .hud-action .pixel-btn-big { font-size: 12px; padding: 12px 20px; }
@@ -693,8 +1122,31 @@
      as one deliberate two-button bar instead of a big button + a small one. */
   .hud-action .label-full { display: none; }
   .hud-action .label-compact { display: inline; }
-  .hud-action .wall-actions { align-items: stretch; }
-  .hud-action .wall-actions .pixel-btn { flex: 1 1 0; min-width: 0; }
+  /* A shield was spent to save the run. Stated, not celebrated. */
+.shield-notice {
+  margin: 0;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #9fc4e8;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Shown only when a live streak is still unmarked late in the day. */
+.streak-risk {
+  margin: 0;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-align: center;
+  color: var(--red);
+  text-shadow: 1px 1px 0 #000;
+  animation: risk-pulse 2.4s ease-in-out infinite;
+}
+@keyframes risk-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .streak-risk { animation: none; opacity: 1; } }
+
+.hud-action .wall-actions { align-items: stretch; }
+  .hud-action .wall-actions > .pixel-btn { flex: 1 1 0; min-width: 0; }
   .hud-action .pixel-btn-big,
   .hud-action .pixel-btn-danger { font-size: 10px; padding: 10px 8px; }
   .hud-bottom .quote-plaque { padding: 10px 14px; }

@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import Tray from './Tray';
 
 function StatRow({ label, value }) {
   return (
@@ -18,10 +19,11 @@ function StatRow({ label, value }) {
   );
 }
 
-export default function StatsPanel({ stats }) {
+export default function StatsPanel({ stats, progression }) {
   return (
-    <div data-area="stats">
-      <h2 className="panel-title">RECORD</h2>
+    /* The streak rides on the handle so a retracted ledger still says the
+       one number worth seeing at a glance. */
+    <Tray area="stats" label="RECORD" count={`${stats.currentStreak}D`}>
       <dl className="stats-list">
         <StatRow label="CURRENT STREAK" value={`${stats.currentStreak} DAYS`} />
         <StatRow label="LONGEST SENTENCE" value={`${stats.bestStreak} DAYS`} />
@@ -29,7 +31,11 @@ export default function StatsPanel({ stats }) {
         <StatRow label="COMPLETION" value={`${stats.completionPct}%`} />
         <StatRow label="MISSED DAYS" value={`${stats.missedDays}`} />
         <StatRow label="DAYS TRACKED" value={`${stats.daysSinceStart}`} />
+        <StatRow label="STREAK SHIELDS" value={`${stats.shields?.available ?? 0}`} />
+        {progression?.perfect && (
+          <StatRow label="PERFECT DAYS" value={`${progression.perfect.total}`} />
+        )}
       </dl>
-    </div>
+    </Tray>
   );
 }

@@ -1,15 +1,15 @@
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from 'framer-motion';
 import { forwardRef, useEffect, useRef } from 'react';
+import { progressOf, stepFor, isMeasuredType, formatDuration, SECONDS_PER_MINUTE } from '../domain/completion';
 
-const MarkButton = forwardRef(function MarkButton({ doneToday, onClick }, ref) {
+const MarkButton = forwardRef(function MarkButton({ doneToday, onClick, label }, ref) {
   const controls = useAnimation();
   const reducedMotion = useReducedMotion();
   const wasDone = useRef(doneToday);
 
   useEffect(() => {
     // Pulse once, only on the locked->done transition — not on every
-    // unrelated re-render (that was the old bug: a keyframe array in
-    // `animate` replays whenever the parent re-renders).
+    // unrelated re-render.
     if (doneToday && !wasDone.current && !reducedMotion) {
       controls.start({ scale: [1, 1.15, 1], transition: { duration: 0.35 } });
     }
@@ -27,19 +27,97 @@ const MarkButton = forwardRef(function MarkButton({ doneToday, onClick }, ref) {
       whileHover={doneToday ? undefined : { y: -2, filter: 'brightness(1.1)' }}
       whileTap={doneToday ? undefined : { scale: 0.9, y: 1 }}
     >
-      {/* Full text on desktop; a shorter label on mobile (CSS-toggled, see
-          .label-full/.label-compact) so this button and Undo land at a
-          similar natural width instead of one dwarfing the other. */}
-      <span className="label-full">{doneToday ? 'TODAY COMPLETE' : '+ MARK TODAY COMPLETE'}</span>
-      <span className="label-compact">{doneToday ? 'COMPLETE' : '+ COMPLETE'}</span>
+      <span className="label-full">{label.full}</span>
+      <span className="label-compact">{label.compact}</span>
     </motion.button>
   );
 });
 
-export default function ActionButtons({ doneToday, onMarkToday, onUndo, markBtnRef }) {
+/**
+ * A measured habit is logged by filling a bar rather than flipping a switch.
+ * The bar is carved into the same wooden plaque as everything else — the
+ * point is that progress is a physical thing on the wall, not a widget.
+ */
+function ProgressCounter({ routine, record, onAdd, markBtnRef }) {
+  const { value, target, pct, complete, text } = progressOf(routine, record);
+  const step = stepFor(routine);
+  const stepLabel = routine.type === 'duration'
+    ? `${Math.round(step / SECONDS_PER_MINUTE)}M`
+    : `${step}`;
+
   return (
-    <div className="wall-actions">
-      <MarkButton ref={markBtnRef} doneToday={doneToday} onClick={onMarkToday} />
+    <div className={`quest-counter${complete ? ' complete' : ''}`}>
+      <div className="quest-counter-head">
+        <span className="quest-counter-value">{text}</span>
+        {routine.unit && routine.type !== 'duration' && (
+          <span className="quest-counter-unit">{routine.unit}</span>
+        )}
+      </div>
+
+      <div
+        className="quest-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuenow={value}
+        aria-label={`${routine.name}: ${routine.type === 'duration' ? formatDuration(value) : value} of ${routine.type === 'duration' ? formatDuration(target) : target}`}
+      >
+        <motion.div
+          className="quest-bar-fill"
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+        />
+      </div>
+
+      <div className="quest-counter-actions">
+        <button
+          type="button"
+          className="pixel-btn pixel-btn-small quest-step"
+          onClick={() => onAdd(-step)}
+          disabled={value <= 0}
+          aria-label={`Remove ${stepLabel}`}
+        >
+          −{stepLabel}
+        </button>
+        <motion.button
+          ref={markBtnRef}
+          type="button"
+          className="pixel-btn pixel-btn-small quest-step add"
+          onClick={() => onAdd(step)}
+          whileTap={{ scale: 0.92 }}
+          aria-label={`Add ${stepLabel}`}
+        >
+          +{stepLabel}
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+export default function ActionButtons({ routine, record, doneToday, onMarkToday, onAddProgress, onUndo, markBtnRef }) {
+  const measured = isMeasuredType(routine?.type);
+
+  return (
+    <div className={`wall-actions${measured ? ' measured' : ''}`}>
+      {measured ? (
+        <ProgressCounter
+          routine={routine}
+          record={record}
+          onAdd={onAddProgress}
+          markBtnRef={markBtnRef}
+        />
+      ) : (
+        <MarkButton
+          ref={markBtnRef}
+          doneToday={doneToday}
+          onClick={onMarkToday}
+          label={doneToday
+            ? { full: 'TODAY COMPLETE', compact: 'COMPLETE' }
+            : { full: '+ MARK TODAY COMPLETE', compact: '+ COMPLETE' }}
+        />
+      )}
+
       <AnimatePresence>
         {doneToday && (
           <motion.button

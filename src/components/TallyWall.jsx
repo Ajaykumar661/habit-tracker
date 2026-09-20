@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TallyGroup from './TallyGroup';
-import { chunk5 } from '../lib/streaks';
+import { chunk5 } from '../domain/streaks';
 import { formatDateLabel } from '../lib/dates';
 
 const MIN_FADE = 0.55;

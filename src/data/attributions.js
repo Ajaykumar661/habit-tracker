@@ -44,6 +44,18 @@ export const ATTRIBUTIONS = [
     processing: `Supplied on a ${how}; sliced into uniform-cell strips and one atlas by scripts/build-scene-fx.py`,
     license: "Owned by the project owner under OpenAI's terms of use for generated output",
   })),
+  ...[
+    ['dawn',  'Dreamtune',      'Fupi',              'https://opengameart.org/content/dreamtune'],
+    ['day',   'Exploring Town', 'Julie Damsgaard',   'https://opengameart.org/content/exploring-town'],
+    ['dusk',  'Lunar Moth',     'Locomule',          'https://opengameart.org/content/lunar-moth'],
+    ['night', 'Lonely Night',   'Centurion_of_war',  'https://opengameart.org/content/lonely-night'],
+  ].map(([slot, title, author, url]) => ({
+    asset: `audio/${slot}.mp3`,
+    source: url,
+    origin: `"${title}" by ${author}, via OpenGameArt`,
+    processing: 'Trimmed to a loop, loudness-matched and re-encoded to 96 kbps by scripts/build-music.sh',
+    license: 'CC0 1.0 (public domain) — credited here by choice, not obligation',
+  })),
   {
     asset: 'fonts/press-start-2p.ttf',
     source: 'https://fonts.google.com/specimen/Press+Start+2P',

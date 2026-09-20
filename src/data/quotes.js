@@ -54,6 +54,18 @@ export const QUOTES = {
     'The chronicle shows a gap. Chronicles heal.',
   ],
 
+  // Shown once, in the modal, when a run of real length has lapsed. These
+  // carry the loss without scolding — the point is to get back on the wall.
+  STREAK_LOST: [
+    'A wall is not judged by one missing stone.',
+    'The chronicle shows a gap. Chronicles are long; gaps are short.',
+    'Every long run in this kingdom began the day after a shorter one ended.',
+    'No knight went undefeated. They simply returned to the field.',
+    'The stone that fell can be set again. Set it.',
+    'The wall kept your record. It is waiting for the next one.',
+    'Streaks end. Builders do not.',
+  ],
+
   NEW_RECORD: [
     'A new record has been carved into the wall.',
     'The old mark has been surpassed. Let it be known.',

@@ -320,6 +320,20 @@ body { line-height: 1.6; font-size: 11px; }
 .cal-cell.future { color: #3a3d31; }
 .cal-cell.done { background: var(--green-dim); color: var(--cream); box-shadow: inset 0 0 0 1px var(--green); }
 .cal-cell.missed { background: rgba(193, 85, 75, 0.15); color: var(--red); }
+/* A day carrying a written note gets a small mark in its corner. */
+.cal-cell.has-note::before {
+  content: "";
+  position: absolute;
+  top: 1px; right: 1px;
+  width: 3px; height: 3px;
+  background: var(--parchment);
+}
+/* Due today and not done yet — outstanding, not failed. */
+.cal-cell.pending { background: var(--wall); color: var(--cream-dim); }
+/* Missed, but a shield covered it — the gap is real and still shown. */
+.cal-cell.shielded { background: rgba(120, 160, 210, 0.16); color: #9fc4e8; box-shadow: inset 0 0 0 1px rgba(159, 196, 232, 0.4); }
+/* Not due that day — neither a success nor a failure. */
+.cal-cell.unscheduled { background: transparent; color: #3f4236; border-color: rgba(255, 255, 255, 0.06); }
 .cal-cell.today { outline: 2px solid var(--amber); outline-offset: -1px; }
 .cal-cell.start-day::after { content: ""; position: absolute; bottom: 1px; left: 1px; right: 1px; height: 2px; background: var(--amber); }
 
@@ -339,7 +353,12 @@ body { line-height: 1.6; font-size: 11px; }
 .stats-list dt { font-size: 8.5px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; }
 .stats-list dd { font-size: 12px; color: var(--amber); margin: 0; text-align: right; }
 
-.achievements-grid { display: flex; flex-direction: column; gap: 10px; }
+.achievements-grid {
+  display: flex; flex-direction: column; gap: 10px;
+  /* The catalogue is long enough to scroll on its own rather than pushing
+     the rest of the keep off the page. */
+  max-height: 340px; overflow-y: auto; padding-right: 4px;
+}
 .achievement-badge {
   position: relative;
   display: flex; align-items: center; gap: 10px; padding: 8px;
@@ -351,7 +370,14 @@ body { line-height: 1.6; font-size: 11px; }
   border-color: var(--amber);
   box-shadow: 2px 2px 0 0 var(--shadow-dark), inset 0 0 0 1px var(--amber-dim);
 }
-.achievement-text { display: flex; flex-direction: column; gap: 2px; }
+.achievement-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+/* A locked plaque shows how far along it is; the bar is the whole reason
+   a locked one is worth rendering at all. */
+.achievement-bar {
+  display: block; height: 4px; margin-top: 3px;
+  background: var(--border-dark); border: 1px solid var(--shadow-dark);
+}
+.achievement-bar-fill { display: block; height: 100%; background: var(--amber-dim); }
 .achievement-title { font-size: 9px; color: var(--cream); }
 .achievement-days { font-size: 8px; color: var(--cream-dim); }
 .achievement-date { font-size: 7.5px; color: var(--green); letter-spacing: 0.5px; }
@@ -418,6 +444,68 @@ body { line-height: 1.6; font-size: 11px; }
 .achievement-icon-slot .pixel-icon { grid-template-columns: repeat(8, 5px); grid-template-rows: repeat(8, 5px); }
 .achievement-icon-slot .pixel-icon span { width: 5px; height: 5px; }
 
+/* the day-turn picker: seven small choices, wrapping on a phone */
+.cutoff-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 6px; }
+.cutoff-row .choice-btn { flex: 0 0 auto; }
+.settings-note-quiet { font-size: 7px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; line-height: 1.7; }
+
+/* ---- the rally: shown only in the days after a break ---------------- */
+.rally {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 6px 10px;
+  margin: 2px 0 8px; padding: 6px 10px;
+  background: var(--panel-alt);
+  border: 2px solid var(--amber-dim);
+}
+.rally.won { border-color: var(--green); }
+.rally-label { font-size: 7px; color: var(--amber); letter-spacing: 1px; }
+.rally.won .rally-label { color: var(--green); }
+.rally-pips { display: inline-flex; gap: 3px; }
+.rally-pip {
+  width: 7px; height: 7px;
+  background: transparent; border: 1px solid var(--amber-dim);
+}
+.rally-pip.lit { background: var(--amber); border-color: var(--amber); }
+.rally.won .rally-pip.lit { background: var(--green); border-color: var(--green); }
+.rally-line { font-size: 7.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.rally.won .rally-line { color: var(--cream); }
+
+/* ============================================================
+   Kingdom report
+   ============================================================ */
+.report-body { display: flex; flex-direction: column; gap: 10px; }
+.report-verdict { font-size: 8.5px; line-height: 1.7; color: var(--amber); margin: 0; }
+.report-range { font-size: 7.5px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; }
+.report-figures { gap: 7px; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--cream-dim); }
+
+/* Seven columns, one per weekday. A day without enough history is drawn
+   hollow rather than reported as if it meant something. */
+.week-chart {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  align-items: end; padding: 8px 0 2px;
+  border-top: 2px solid var(--border-dark); border-bottom: 2px solid var(--border-dark);
+}
+.week-bar { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.week-bar-track {
+  width: 100%; height: 44px; display: flex; align-items: flex-end;
+  background: var(--panel-alt); border: 1px solid var(--border-dark);
+}
+.week-bar-fill { width: 100%; background: var(--amber-dim); }
+.week-bar.best .week-bar-fill { background: var(--amber); }
+.week-bar.thin .week-bar-fill { background: var(--border-dark); }
+.week-bar-label { font-size: 6.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.week-bar.best .week-bar-label { color: var(--amber); }
+
+.report-patterns { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pattern { display: flex; flex-direction: column; gap: 3px; padding-left: 8px; border-left: 2px solid var(--border-dark); }
+.pattern.good { border-left-color: var(--green); }
+.pattern.soft { border-left-color: var(--amber-dim); }
+.pattern-text { font-size: 8px; line-height: 1.7; color: var(--cream); }
+.pattern-sample { font-size: 6.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.report-waiting { font-size: 8px; line-height: 1.7; color: var(--cream-dim); margin: 0; }
+
 /* ============================================================
    Responsive: mobile reorder
    wall unit (wall + streak + button) -> record -> cell log -> achievements
@@ -430,6 +518,7 @@ body { line-height: 1.6; font-size: 11px; }
   [data-area="stats"] { order: 2; }
   [data-area="cell-log"] { order: 3; }
   [data-area="achievements"] { order: 4; }
+  [data-area="report"] { order: 5; }
   .sidebar { order: 5; }
   .panel { padding: 12px; }
   .day-counter { font-size: 28px; }
