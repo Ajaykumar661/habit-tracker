@@ -13,6 +13,7 @@ import Achievements from './components/Achievements';
 import Tooltip from './components/Tooltip';
 import ConfirmModal from './components/ConfirmModal';
 import AddRoutineModal from './components/AddRoutineModal';
+import SettingsSheet from './components/SettingsSheet';
 import GroupPopover from './components/GroupPopover';
 import AchievementPopup from './components/AchievementPopup';
 import ParticleLayer from './components/ParticleLayer';
@@ -45,6 +46,7 @@ export default function App() {
   const [tooltip, setTooltip] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupDates, setGroupDates] = useState(null);
   const [drawer, setDrawer] = useState(null); // 'routines' | 'record' | null — the mobile HUD drawer
   const [achievement, setAchievement] = useState(null);
@@ -87,13 +89,14 @@ export default function App() {
       if (achievement) { setAchievement(null); return; }
       if (confirm) { handleConfirmNo(); return; }
       if (groupDates) { handleCloseGroup(); return; }
+      if (settingsOpen) { SoundFX.close(); setSettingsOpen(false); return; }
       if (addRoutineOpen) { SoundFX.close(); setAddRoutineOpen(false); return; }
       if (drawer) { setDrawer(null); return; }
       CapApp.exitApp();
     });
     return () => { sub.then((h) => h.remove()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [achievement, confirm, groupDates, addRoutineOpen, drawer]);
+  }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, drawer]);
 
   function handleRerollQuote() {
     setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }));
@@ -258,6 +261,7 @@ export default function App() {
       {/* GAME VIEW — fixed, full-viewport room with the HUD around it */}
       <GameView
         envState={envState}
+        streak={stats.currentStreak}
         shake={appControls}
         drawer={drawer}
         setDrawer={setDrawer}
@@ -267,6 +271,7 @@ export default function App() {
             muted={muted}
             onToggleMute={handleToggleMute}
             onAddRoutine={() => { SoundFX.open(); setAddRoutineOpen(true); }}
+            onOpenSettings={() => { SoundFX.open(); setSettingsOpen(true); }}
             collapsed={collapsed}
           />
         )}
@@ -336,6 +341,12 @@ export default function App() {
         open={addRoutineOpen}
         onClose={() => { SoundFX.close(); setAddRoutineOpen(false); }}
         onCreate={handleCreateRoutine}
+      />
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => { SoundFX.close(); setSettingsOpen(false); }}
+        muted={muted}
+        onToggleMute={handleToggleMute}
       />
       <AchievementPopup achievement={achievement} />
       <ParticleLayer particles={particles} onDone={removeParticle} />

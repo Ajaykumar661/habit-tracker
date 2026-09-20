@@ -1,14 +1,24 @@
 import { motion } from 'framer-motion';
-import { IconPlus } from './icons';
+import { IconPlus, IconGear } from './icons';
 
-// Mobile (collapsed): no bar background — just the one floating icon button
-// that doesn't belong to a bottom-tab destination (see BottomTabBar.jsx).
-// Mute is dropped for now; it'll live inside a gear/settings icon later.
-// Desktop is untouched — full text buttons, unconditionally.
-export default function TopBar({ muted, onToggleMute, onAddRoutine, collapsed }) {
+// Mobile (collapsed): no bar background — just the two floating icon buttons
+// that don't belong to a bottom-tab destination (see BottomTabBar.jsx).
+// Mute lives in the settings sheet behind the gear, not out here.
+// Desktop keeps its text buttons; the gear is added alongside them.
+export default function TopBar({ muted, onToggleMute, onAddRoutine, onOpenSettings, collapsed }) {
   if (collapsed) {
     return (
       <header className="topbar topbar-mobile">
+        <motion.button
+          type="button"
+          className="pixel-btn pixel-icon-btn"
+          onClick={onOpenSettings}
+          whileTap={{ scale: 0.88 }}
+          aria-label="Settings"
+          title="Settings"
+        >
+          <IconGear />
+        </motion.button>
         <motion.button
           type="button"
           className="pixel-btn pixel-icon-btn"
@@ -36,6 +46,16 @@ export default function TopBar({ muted, onToggleMute, onAddRoutine, collapsed })
         </motion.button>
         <motion.button type="button" className="pixel-btn pixel-btn-tiny" onClick={onAddRoutine} whileTap={{ scale: 0.92 }}>
           + NEW ROUTINE
+        </motion.button>
+        <motion.button
+          type="button"
+          className="pixel-btn pixel-btn-tiny pixel-icon-btn"
+          onClick={onOpenSettings}
+          whileTap={{ scale: 0.9 }}
+          aria-label="Settings"
+          title="Settings"
+        >
+          <IconGear />
         </motion.button>
       </div>
     </header>

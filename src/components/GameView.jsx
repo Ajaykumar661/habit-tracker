@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { wallSurface, sceneFor } from '../data/assets';
 import { useSceneLayout, useIsNarrowViewport } from '../hooks/useSceneLayout';
 import BottomTabBar from './BottomTabBar';
+import SceneFx from './SceneFx';
 
 // The "game screen": a fixed, full-viewport room with the HUD around it.
 //   room art + tally wall   (world)
@@ -12,7 +13,7 @@ import BottomTabBar from './BottomTabBar';
 // `drawer`/`setDrawer` ('routines' | 'record' | null) are lifted to App so
 // the Android hardware back button can close whichever is open (see
 // App.jsx's backButton listener) without GameView knowing about Capacitor.
-export default function GameView({ envState, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
+export default function GameView({ envState, streak, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
   // Below the breakpoint, swap to the portrait room (archway sits above the
   // wall there, so its own cover-scaled crop keeps the sky in frame — see
   // scenesMobile in data/assets.js). Picked here, before useSceneLayout,
@@ -63,6 +64,9 @@ export default function GameView({ envState, shake, topBar, title, wall, left, r
               exit={{ opacity: 0 }}
               transition={{ duration: 1.6 }}
             />
+          </AnimatePresence>
+          <AnimatePresence initial={false}>
+            {scene.fx && <SceneFx key={scene.src} scene={scene} streak={streak} />}
           </AnimatePresence>
           <div className="scene-title" style={box(scene.regions.title)}>{title}</div>
         </div>

@@ -30,9 +30,9 @@ const ROOM = {
 // 05:00–08:00 falls back to the dusk room (warm low sun, lanterns still
 // lit), the closest of the three.
 export const scenes = {
-  day:   { ...ROOM, lighting: 'day',   src: '/assets/environment/day-scene.png' },
-  dusk:  { ...ROOM, lighting: 'dusk',  src: '/assets/environment/dusk-scene.png' },
-  night: { ...ROOM, lighting: 'night', src: '/assets/environment/night-scene.png' },
+  day:   { ...ROOM, lighting: 'day',   src: '/assets/environment/day-scene.png',   fx: { key: 'landscape-day' } },
+  dusk:  { ...ROOM, lighting: 'dusk',  src: '/assets/environment/dusk-scene.png',  fx: { key: 'landscape-dusk' } },
+  night: { ...ROOM, lighting: 'night', src: '/assets/environment/night-scene.png', fx: { key: 'landscape-night' } },
 };
 const STAND_IN = { dawn: 'dusk' };
 
@@ -54,10 +54,10 @@ const ROOM_MOBILE = {
 
 // All four times of day exist for this frame, so no stand-in needed here.
 export const scenesMobile = {
-  dawn:  { ...ROOM_MOBILE, lighting: 'dawn',  src: '/assets/environment/mobile-dawn-scene.png' },
-  day:   { ...ROOM_MOBILE, lighting: 'day',   src: '/assets/environment/mobile-day-scene.png' },
-  dusk:  { ...ROOM_MOBILE, lighting: 'dusk',  src: '/assets/environment/mobile-dusk-scene.png' },
-  night: { ...ROOM_MOBILE, lighting: 'night', src: '/assets/environment/mobile-night-scene.png' },
+  dawn:  { ...ROOM_MOBILE, lighting: 'dawn',  src: '/assets/environment/mobile-dawn-scene.png', fx: { key: 'portrait-dawn' } },
+  day:   { ...ROOM_MOBILE, lighting: 'day',   src: '/assets/environment/mobile-day-scene.png', fx: { key: 'portrait-day' } },
+  dusk:  { ...ROOM_MOBILE, lighting: 'dusk',  src: '/assets/environment/mobile-dusk-scene.png', fx: { key: 'portrait-dusk' } },
+  night: { ...ROOM_MOBILE, lighting: 'night', src: '/assets/environment/mobile-night-scene.png', fx: { key: 'portrait-night' } },
 };
 
 export function sceneFor(envState, mobile) {
@@ -70,9 +70,6 @@ export function sceneFor(envState, mobile) {
 export const wallSurface = { src: '/assets/environment/wall-surface.png' };
 
 // ---- Planned, not yet supplied -----------------------------------------
-
-/** Animated lantern flame for dusk/night, composited over unlit housings. */
-export const flameSheet = { src: '/assets/props/flame-sheet.png', frames: 6, fps: 8 };
 
 /** 9-slice UI surfaces (border inset in source px, for border-image-slice).
  *  Until these exist the panels below the scene use plain CSS surfaces. */
