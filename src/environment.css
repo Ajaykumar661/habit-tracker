@@ -612,14 +612,27 @@
   z-index: 20;
   padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
 }
+/* No band across the top: on a wide screen the room is drawn large and the
+   trophy shelf and skyline reach up behind it. The title sits on its own
+   small plate and the buttons carry their own faces; the empty middle lets
+   taps through to the scene (a trophy under it is still tappable). */
+.hud-top { pointer-events: none; }
 .hud-top .topbar {
   margin: 0;
-  padding: 8px 16px;
+  padding: 10px 16px;
   min-height: 46px;
-  background: rgba(10, 7, 4, 0.72);
+  background: none;
   border: 0;
-  border-bottom: 1px solid rgba(138, 106, 58, 0.45);
   box-shadow: none;
+}
+.hud-top .topbar-title,
+.hud-top .topbar-actions > *,
+.hud-top .topbar-mobile > * { pointer-events: auto; }
+.hud-top .topbar:not(.topbar-mobile) .topbar-title {
+  padding: 8px 12px 7px;
+  background: rgba(10, 7, 4, 0.78);
+  border: 1px solid rgba(138, 106, 58, 0.6);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
 }
 .topbar-left { display: flex; align-items: center; gap: 10px; }
 .hud-top .topbar-title { font-size: 14px; letter-spacing: 3px; }
