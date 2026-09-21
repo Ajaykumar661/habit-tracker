@@ -8,6 +8,9 @@
 // portable, obvious shape). Imports run through the same migration path as
 // localStorage, so a file written by an older build still restores.
 
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { loadState, saveState } from './storage';
 import { SCHEMA_VERSION, validateState, normalizeState } from '../domain/schema';
 import { migrateState } from '../domain/migrate';
@@ -51,11 +54,45 @@ export function buildBackup(state) {
   };
 }
 
-export function exportBackup() {
+/**
+ * Save a copy of the whole record somewhere the owner controls.
+ *
+ * In a browser that is an ordinary download. Inside the Android and iOS
+ * apps it cannot be: the WebView has no download handler, so the old
+ * download-link approach silently saved nothing while the app reported
+ * success -- the one failure a backup must never have. There, the file is
+ * written to the app's cache and handed to the system share sheet, so it
+ * can be saved to Drive, Files, email or anywhere else the phone offers.
+ *
+ * Resolves to `{ routines, tallies, cancelled }`. `cancelled` is true when
+ * the share sheet was dismissed: nothing was saved, and the caller must not
+ * say otherwise.
+ */
+export async function exportBackup() {
   const state = loadState();
   if (!state) throw new Error('Nothing to export yet.');
   const payload = buildBackup(state);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(payload, null, 2);
+  const counts = { routines: state.habits.length, tallies: payload.completions.length };
+
+  if (Capacitor.isNativePlatform()) {
+    const { uri } = await Filesystem.writeFile({
+      path: backupFilename(),
+      data: json,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+    });
+    try {
+      await Share.share({ title: 'Tally Wall backup', files: [uri] });
+    } catch (err) {
+      // The sheet reports a dismissal as an error; anything else is real.
+      if (/cancel/i.test(String(err?.message || err))) return { ...counts, cancelled: true };
+      throw err;
+    }
+    return { ...counts, cancelled: false };
+  }
+
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -65,7 +102,7 @@ export function exportBackup() {
   a.remove();
   // Revoking immediately can cancel the download on some browsers.
   setTimeout(() => URL.revokeObjectURL(url), 10000);
-  return { routines: state.habits.length, tallies: payload.completions.length };
+  return { ...counts, cancelled: false };
 }
 
 /**
