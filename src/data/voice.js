@@ -148,6 +148,24 @@ const medieval = {
 
   widget: { day: 'DAY', done: 'DONE', allDone: 'ALL DONE', rest: 'A DAY OF REST', stale: 'OPEN THE WALL' },
 
+  // The room that grows (RoomExtras): what each object is called, and why
+  // it is there. Earned by the best run ever, so the words say "earned".
+  room: {
+    title: 'THE ROOM',
+    names: {
+      candle: 'THE FIRST CANDLE', herb: 'A POTTED HERB', goblet: 'THE BRONZE GOBLET',
+      banner: 'THE LAUREL BANNER', crown: 'THE CROWN', armour: 'THE WARDEN’S ARMOUR',
+    },
+    earned: (d) => `EARNED FOR A ${d}-DAY STREAK`,
+    fresh: 'NEW IN THE KEEP',
+    decos: { winter: 'A WINTER WREATH', spring: 'SPRING TULIPS', summer: 'A JAR OF FIREFLIES', autumn: 'THE HARVEST' },
+    season: 'THIS SEASON’S DECORATION',
+    cat: { bed: 'HER CUSHION', crown: 'HER CROWN' },
+    count: (n, total) => `${n} / ${total} EARNED`,
+    next: (name, d) => `NEXT: ${name} AT ${d} DAYS`,
+    done: 'THE KEEP IS COMPLETE',
+  },
+
   day: {
     chronicle: 'THE CHRONICLE',
     perfect: 'A PERFECT DAY',
@@ -357,6 +375,22 @@ const neon = {
   },
 
   widget: { day: 'DAY', done: 'LOGGED', allDone: 'ALL CLEAR', rest: 'NO MISSIONS', stale: 'RECONNECT' },
+
+  room: {
+    title: 'THE HIDEOUT',
+    names: {
+      lavalamp: 'A LAVA LAMP', holoplant: 'A HOLO PLANT', trophy: 'THE CHROME TROPHY',
+      uptime: 'THE UPTIME SIGN', arcade: 'AN ARCADE CABINET', hologram: 'THE HOLOGRAM',
+    },
+    earned: (d) => `UNLOCKED BY A ${d}-DAY STREAK`,
+    fresh: 'NEW IN THE HIDEOUT',
+    decos: { winter: 'FROST LIGHTS', spring: 'NEON BLOSSOM', summer: 'A SUMMER CAN', autumn: 'THE HOLO PUMPKIN' },
+    season: 'SEASONAL MOD',
+    cat: { bed: 'HER POD', crown: 'HER VISOR' },
+    count: (n, total) => `${n} / ${total} UNLOCKED`,
+    next: (name, d) => `NEXT: ${name} AT ${d} DAYS`,
+    done: 'HIDEOUT FULLY LOADED',
+  },
 
   day: {
     chronicle: 'THE LOGBOOK',

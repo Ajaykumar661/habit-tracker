@@ -31,6 +31,7 @@ import QuotePlaque from './components/QuotePlaque';
 import DevEnvSwitcher from './components/DevEnvSwitcher';
 import GameView from './components/GameView';
 import LevelPlaque from './components/LevelPlaque';
+import RoomProgress from './components/RoomProgress';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { useReminders } from './hooks/useReminders';
@@ -460,6 +461,8 @@ export default function App() {
         streak={stats.currentStreak}
         best={best}
         season={season}
+        roomSeen={settings?.roomSeen ?? 0}
+        onRoomSeen={(day) => setSetting('roomSeen', day)}
         shake={appControls}
         drawer={drawer}
         setDrawer={setDrawer}
@@ -496,6 +499,7 @@ export default function App() {
         right={() => (
           <>
             <LevelPlaque progression={progression} />
+            <RoomProgress theme={theme} best={best} />
             <StatsPanel stats={stats} progression={progression} />
             <Achievements
               routine={activeRoutine}

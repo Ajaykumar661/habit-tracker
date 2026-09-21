@@ -30,6 +30,9 @@ export const DEFAULT_SETTINGS = {
   // One reminder a day, off until the user asks for it (domain/reminders.js).
   reminderOn: false,
   reminderTime: '20:00',
+  // The best milestone day whose room object has been announced, so each
+  // newly earned object is pointed out once (components/RoomExtras.jsx).
+  roomSeen: 0,
 };
 
 const REMINDER_TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;

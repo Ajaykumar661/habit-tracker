@@ -48,7 +48,9 @@ SHEETS = {
         'upgrades': 'medieval_3_cat_upgrade.png',
         'pet': 'medieval_4_pet_cat.png',
         'particles': 'medieval_5_season_particles.png',
-        'decorations': 'medieval_6_season_decorations.png',
+        'decorations': 'medieval_6_season_decorations_new.png',
+        # her crown at 100, on the same cushion as her bed at 30
+        'crown': 'Crowned Cat on Velvet Cushion.png',
     },
     'neon': {
         'milestones': 'neon_1_milestones.png',
@@ -67,16 +69,18 @@ SHEETS = {
 SPOTS = {
     'medieval': {
         'landscape': {
-            'candle': (196, 634, 40), 'herb': (345, 690, 62), 'goblet': (130, 772, 58),
+            # the stool is the live cat's (build-scene-fx.py), so the herb
+            # shares the chest with the goblet
+            'candle': (196, 634, 40), 'herb': (170, 772, 56), 'goblet': (102, 772, 56),
             'banner': (388, 610, 76), 'crown': (250, 858, 84), 'armour': (452, 805, 92),
         },
         'portrait': {
             # the routine's name plaque hangs on this lintel and grows with the
-            # name, so small things keep to the left end, the tall armour
-            # stands where it still shows over a long name, and the crown
-            # waits by the cat at the right
-            'candle': (240, 440, 38), 'herb': (284, 440, 46), 'goblet': (330, 440, 44),
-            'armour': (392, 440, 62), 'crown': (568, 440, 58), 'banner': (150, 1030, 72),
+            # name, so the objects pack into the left end -- the tall armour
+            # last, where it still shows over a long name -- and the season's
+            # piece has the gap by the cat at the right
+            'candle': (230, 440, 32), 'herb': (266, 440, 38), 'goblet': (302, 440, 38),
+            'crown': (346, 440, 50), 'armour': (398, 440, 54), 'banner': (150, 1030, 72),
         },
     },
     'neon': {
@@ -110,7 +114,18 @@ SEASON_SPOTS = {
             'spring': (598, 470, 80), 'summer': (598, 470, 28),
         },
     },
-    'medieval': {'landscape': {}, 'portrait': {}},
+    'medieval': {
+        # landscape: the open floor right of the action panel, in front of
+        # the flower pot (the ledge at the wall's foot is part of the wall)
+        'landscape': {
+            'winter': (1186, 792, 62), 'autumn': (1182, 792, 84),
+            'spring': (1182, 792, 80), 'summer': (1188, 792, 44),
+        },
+        'portrait': {
+            'winter': (574, 440, 50), 'autumn': (570, 440, 62),
+            'spring': (570, 440, 60), 'summer': (576, 440, 34),
+        },
+    },
 }
 
 # Which milestone objects have a flicker strip, in sheet row order.
@@ -219,6 +234,7 @@ def build(theme, preview=False):
     manifest['cat']['heart'] = out.strip([crop(pet, b) for b in hearts], 'cat-heart')
 
     up = load(art / names['upgrades'])
+    crown_path = art / names['crown'] if 'crown' in names else None
     [ups] = layout(up[..., 3], [2], names['upgrades'])
     for key, box, day in zip(['bed', 'crown'], ups, [30, 100]):
         img = crop(up, box)
@@ -227,6 +243,15 @@ def build(theme, preview=False):
         spr['rel'] = round((spr['w'] / body_width(shrink(img), 0.55)) * (cat_body / cat_cw), 4)
         spr['day'] = day
         manifest['cat'][key] = spr
+    if crown_path and crown_path.exists():
+        # a crowned cat on the bed's own cushion: drawn at the bed's scale,
+        # so she does not change size between 30 days and 100
+        cs = load(crown_path)
+        [[box]] = layout(cs[..., 3], [1], names['crown'])
+        spr = out.sprite(crop(cs, box), 'cat-crown')
+        spr['rel'] = manifest['cat']['bed']['rel']
+        spr['day'] = 100
+        manifest['cat']['crown'] = spr
 
     # ---- seasons: one clean particle each, and a decoration -----------------
     ppath = art / names['particles']

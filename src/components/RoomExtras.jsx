@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { earnedMilestones, catLookFor } from '../domain/room';
 import { SoundFX } from '../lib/sound';
+import { useVoice } from '../hooks/useVoice';
 
 // What the room has earned, and the cat you can pet.
 //
@@ -12,11 +13,17 @@ import { SoundFX } from '../lib/sound';
 //   the season         petals, leaves or snow drifting down, and the
 //                      season's decoration where the theme has one
 //
+// Every object says what it is: tap it for a small plaque ("THE FIRST
+// CANDLE -- earned for a 7-day streak"). One earned since it was last seen
+// sparkles, and its plaque shows once by itself; `seenDay` remembers.
+//
 // Positions are in the room image's own pixels and emitted as percentages,
 // exactly like SceneFx, so everything stays registered to the art.
 
 const PET_MS = 2600;      // the whole wake-stretch-purr-settle, once
 const HEART_MS = 1500;
+const LABEL_MS = 3200;
+const FRESH_MS = 5200;    // a newly earned object's plaque stays a little longer
 
 // How each season's particles move: size range (room px), seconds to fall
 // the height of the room, how far they sway, and how much they turn.
@@ -25,6 +32,12 @@ const DRIFT = {
   autumn: { size: [18, 30], fall: [9, 14], sway: [3, 7], spin: 540 },
   winter: { size: [12, 22], fall: [14, 22], sway: [1, 3], spin: 90 },
 };
+
+/** Drawn height of a milestone object at its spot. */
+function objectHeight(m, s) {
+  const f = m.flicker;
+  return f ? (s.w * f.ch) / f.cw : (s.w * m.h) / m.w;
+}
 
 /** A fixed flurry for a season: the same on every render, varied within. */
 function flurry(season, count) {
@@ -50,10 +63,23 @@ function flurry(season, count) {
   });
 }
 
-function RoomExtras({ scene, extras, best, season, sparse = false }) {
+function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, onSeen }) {
+  const words = useVoice().room;
   const [petting, setPetting] = useState(false);
+  const [label, setLabel] = useState(null);   // { title, sub, x, y, fresh }
+  const [freshId, setFreshId] = useState(null);
   const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const labelTimer = useRef(null);
+  const freshTimer = useRef(null);
+  useEffect(() => () => {
+    clearTimeout(timer.current); clearTimeout(labelTimer.current); clearTimeout(freshTimer.current);
+  }, []);
+
+  const show = useCallback((next, ms = LABEL_MS) => {
+    clearTimeout(labelTimer.current);
+    setLabel(next);
+    labelTimer.current = setTimeout(() => setLabel(null), ms);
+  }, []);
 
   const pct = (v, of) => `${(v / of) * 100}%`;
   const orient = scene.orientation;
@@ -68,6 +94,25 @@ function RoomExtras({ scene, extras, best, season, sparse = false }) {
     SoundFX.purr();
     timer.current = setTimeout(() => setPetting(false), PET_MS);
   }, [petting]);
+
+  // An object earned since the room was last seen: sparkle it, show its
+  // plaque once, and remember the room as seen up to the best object held.
+  const earned = earnedMilestones(extras?.milestones, best);
+  const fresh = [...earned].reverse().find((m) => m.day > seenDay && m.spots?.[orient]);
+  const heldDay = earned.length ? earned[earned.length - 1].day : 0;
+  useEffect(() => {
+    if (!fresh) return undefined;
+    const s = fresh.spots[orient];
+    setFreshId(fresh.id);
+    show({ title: words.fresh, sub: `${words.names[fresh.id] || fresh.id} · ${words.earned(fresh.day)}`,
+      x: s.x, y: s.y - objectHeight(fresh, s), fresh: true }, FRESH_MS);
+    onSeen?.(heldDay);
+    clearTimeout(freshTimer.current);
+    freshTimer.current = setTimeout(() => setFreshId(null), FRESH_MS);
+    return undefined;
+    // announced once per newly earned object
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fresh?.id]);
 
   if (!extras) return null;
 
@@ -106,7 +151,11 @@ function RoomExtras({ scene, extras, best, season, sparse = false }) {
     };
   };
 
-  const items = earnedMilestones(extras.milestones, best);
+  const items = earned;
+  const tellAbout = (m, s) => {
+    SoundFX.click();
+    show({ title: words.names[m.id] || m.id, sub: words.earned(m.day), x: s.x, y: s.y - objectHeight(m, s) });
+  };
   const lookSprite = look ? extras.cat[look] : null;
   const away = !!cat && (petting || !!lookSprite);
 
@@ -121,15 +170,17 @@ function RoomExtras({ scene, extras, best, season, sparse = false }) {
         const s = m.spots?.[orient];
         if (!s) return null;
         const f = m.flicker;
+        const cls = `room-obj${m.id === freshId ? ' room-new' : ''}`;
+        const tap = { onClick: () => tellAbout(m, s), role: 'button', 'aria-label': words.names[m.id] || m.id };
         return f ? (
-          <span key={m.id} className={`room-obj room-flicker room-flicker-${m.id}`}
+          <span key={m.id} className={`${cls} room-flicker room-flicker-${m.id}`} {...tap}
             style={{
               ...standing(s.x, s.y, s.w, f.cw, f.ch),
               backgroundImage: `url(${f.src})`,
               backgroundSize: `${f.frames * 100}% 100%`,
             }} />
         ) : (
-          <img key={m.id} className="room-obj" src={m.src} alt="" draggable="false"
+          <img key={m.id} className={cls} src={m.src} alt="" draggable="false" {...tap}
             style={standing(s.x, s.y, s.w, m.w, m.h)} />
         );
       })}
@@ -139,6 +190,11 @@ function RoomExtras({ scene, extras, best, season, sparse = false }) {
         const s = d?.spots?.[orient];
         return s ? (
           <img className="room-obj room-deco" src={d.src} alt="" draggable="false"
+            role="button" aria-label={words.decos[season]}
+            onClick={() => {
+              SoundFX.click();
+              show({ title: words.decos[season], sub: words.season, x: s.x, y: s.y - (s.w * d.h) / d.w });
+            }}
             style={standing(s.x, s.y, s.w, d.w, d.h)} />
         ) : null;
       })()}
@@ -202,6 +258,18 @@ function RoomExtras({ scene, extras, best, season, sparse = false }) {
           </span>
         ));
       })()}
+
+      {label && (
+        <div className={`room-label${label.fresh ? ' fresh' : ''}`} role="status"
+          // centred on the object, but never past the edge of a cropped screen
+          style={{
+            left: `clamp(calc(50% - 50vw + 120px), ${pct(label.x, scene.width)}, calc(50% + 50vw - 120px))`,
+            top: pct(label.y, scene.height),
+          }}>
+          <span className="room-label-title">{label.title}</span>
+          <span className="room-label-sub">{label.sub}</span>
+        </div>
+      )}
 
       {cat && (
         <button
