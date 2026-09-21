@@ -290,13 +290,6 @@ body { line-height: 1.6; font-size: 11px; }
 .pixel-btn-tiny { background: var(--amber); box-shadow: inset -2px -3px 0 0 var(--amber-dim), inset 2px 2px 0 0 #f6dcb0, 2px 2px 0 0 var(--shadow-dark); padding: 6px 10px; font-size: 10px; }
 .pixel-btn-danger { background: var(--red); box-shadow: inset -3px -4px 0 0 var(--red-dim), inset 3px 3px 0 0 #e2a49d, 3px 3px 0 0 var(--shadow-dark); }
 
-.btn-complete-state {
-  background: var(--panel-alt) !important;
-  color: var(--green) !important;
-  box-shadow: inset 0 0 0 2px var(--green-dim), 3px 3px 0 0 var(--shadow-dark) !important;
-  cursor: default !important;
-}
-
 /* ============================================================
    Cell log (calendar + bars) — supporting history, de-emphasized
    ============================================================ */

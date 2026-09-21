@@ -495,7 +495,6 @@ export default function App() {
         bottom={(
           <>
             <div className="hud-action">
-              <DayNumber stats={stats} />
               {shieldNotice && (
                 <p className="shield-notice" role="status">
                   {voice.notice.shield}
@@ -507,15 +506,18 @@ export default function App() {
                 </p>
               )}
               <RallyStrip recovery={recovery} />
-              <ActionButtons
-                routine={activeRoutine}
-                record={todayRecord}
-                doneToday={doneToday}
-                onMarkToday={handleMarkToday}
-                onAddProgress={handleAddProgress}
-                onUndo={handleUndoToday}
-                markBtnRef={markBtnRef}
-              />
+              <div className="action-row">
+                <DayNumber stats={stats} doneToday={doneToday} />
+                <ActionButtons
+                  routine={activeRoutine}
+                  record={todayRecord}
+                  doneToday={doneToday}
+                  onMarkToday={handleMarkToday}
+                  onAddProgress={handleAddProgress}
+                  onUndo={handleUndoToday}
+                  markBtnRef={markBtnRef}
+                />
+              </div>
             </div>
             <QuotePlaque quote={quote} onReroll={handleRerollQuote} />
             <button type="button" className="scroll-cue" onClick={scrollToLog}>{voice.log.cue}</button>

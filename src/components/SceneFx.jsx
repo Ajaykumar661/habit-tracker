@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { Fragment, memo, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // Animated layer over the flattened room art: lantern flames, weather, and
@@ -253,19 +253,24 @@ function SceneFx({ scene, streak = 0 }) {
         );
       })}
 
-      {(place.cat || []).map((it, i) => (
-        <span key={`cat${i}`} className="fx-cat fx-step-6"
-          style={{ ...strip('cat', it.w), ...spot(it, stripAspect('cat')),
-            // She sleeps three quarters of the way across the room, and on a
-            // very tall phone the canvas is scaled to cover the height, so
-            // that much of the width is cropped away and her tail goes with
-            // it. The canvas is centred, so the viewport's right edge sits at
-            // `50% + 50vw` in canvas coordinates: never let her start further
-            // right than that leaves room for. On every ordinary screen the
-            // painted position wins and nothing moves.
-            left: onScreenLeft(it),
-            animationDuration: `${it.dur}s` }} />
-      ))}
+      {(place.cat || []).map((it, i) => {
+        // Two layers of the same sprite, split where she meets her ledge
+        // (the build measures it as `seam`). The ledge is drawn still; the
+        // body above it breathes and now and then settles in her sleep, so
+        // she is alive without the slab or bracket stretching with her.
+        const seam = `${((fx.strips.cat.seam ?? 1) * 100).toFixed(1)}%`;
+        const base = {
+          ...strip('cat', it.w), ...spot(it, stripAspect('cat')),
+          left: onScreenLeft(it), '--seam': seam,
+        };
+        return (
+          <Fragment key={`cat${i}`}>
+            <span className="fx-cat-ledge" style={base} />
+            <span className="fx-cat fx-step-6"
+              style={{ ...base, animationDuration: `${it.dur}s, ${it.dur}s, 19s` }} />
+          </Fragment>
+        );
+      })}
 
       {place.zzz.map((it, i) => (
         <span key={`z${i}`} className="fx-zzz"

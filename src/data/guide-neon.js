@@ -75,7 +75,7 @@ export const NEON_GUIDE_PAGES = [
       'STATS holds your streaks, totals and completion rate.',
       'UNLOCKS shows fifteen of them. Locked ones still show how close you are.',
       'CITY REPORT sums up your week and spots patterns, once there is enough data to mean anything.',
-      'On a phone, find these under the Stats & Unlocks tab.',
+      'On a phone, find these under the Stats tab.',
     ],
   },
   {
