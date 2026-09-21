@@ -449,6 +449,41 @@ body { line-height: 1.6; font-size: 11px; }
 .cutoff-row .choice-btn { flex: 0 0 auto; }
 .settings-note-quiet { font-size: 7px; color: var(--cream-dim); letter-spacing: 0.5px; margin: 0; line-height: 1.7; }
 
+/* ---- editing a quest ------------------------------------------------ */
+/* A pencil drawn from two blocks — the pixel font has no usable glyph. */
+.routine-edit-btn {
+  flex: 0 0 auto;
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; cursor: pointer; padding: 0;
+  opacity: 0.5;
+}
+.routine-edit-btn:hover, .routine-edit-btn:focus-visible { opacity: 1; }
+.edit-glyph {
+  width: 9px; height: 9px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  transform: rotate(45deg);
+}
+.edit-warning {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 2px solid var(--red, #b4574d);
+  background: var(--panel-alt);
+}
+.edit-warning-head { font-size: 7.5px; letter-spacing: 1px; color: var(--red, #b4574d); margin-bottom: 5px; }
+.edit-warning p { margin: 0 0 4px; font-size: 7.5px; line-height: 1.7; color: var(--cream); }
+.edit-warning p:last-child { margin-bottom: 0; }
+
+/* ---- retired quests -------------------------------------------------- */
+.archived-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.archived-row { display: flex; align-items: center; gap: 6px; }
+.archived-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 8px; color: var(--cream); }
+.archived-meta { font-size: 6.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.pixel-btn.danger { border-color: var(--red, #b4574d); color: var(--red, #b4574d); }
+.settings-note-quiet.warn { color: var(--amber); }
+
 /* ============================================================
    The Warden's Guide
    ============================================================ */

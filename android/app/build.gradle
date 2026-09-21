@@ -1,5 +1,24 @@
 apply plugin: 'com.android.application'
 
+// ---------------------------------------------------------------------------
+// Version and signing, supplied from outside the repository.
+//
+// The release workflow passes the version in from the git tag, so cutting a
+// release never means editing this file:
+//
+//     ./gradlew assembleRelease -PtallyVersionName=1.2.3 -PtallyVersionCode=42
+//
+// Signing credentials come from the environment and are never stored here.
+// With no keystore present the release build still succeeds, producing an
+// unsigned APK -- so a fresh clone and a plain `gradlew assembleDebug` keep
+// working with no setup at all.
+// ---------------------------------------------------------------------------
+def tallyVersionName = project.findProperty('tallyVersionName') ?: '1.0'
+def tallyVersionCode = (project.findProperty('tallyVersionCode') ?: '1') as Integer
+
+def keystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+def hasReleaseSigning = keystorePath != null && !keystorePath.trim().isEmpty() && file(keystorePath).exists()
+
 android {
     namespace = "com.tallywall.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +26,8 @@ android {
         applicationId "com.tallywall.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode tallyVersionCode
+        versionName tallyVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +35,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
