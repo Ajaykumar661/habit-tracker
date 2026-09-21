@@ -33,6 +33,7 @@ import GameView from './components/GameView';
 import LevelPlaque from './components/LevelPlaque';
 import RoomProgress from './components/RoomProgress';
 import ShareCardModal from './components/ShareCardModal';
+import FirstRunSheet from './components/FirstRunSheet';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { useReminders } from './hooks/useReminders';
@@ -58,6 +59,7 @@ export default function App() {
     acknowledgeStreakLoss, acknowledgeShield, today, progression, addProgress,
     board, advanceQuest, habits, completions, notes, setNote, setBreakReason,
     settings, setSetting, editRoutine, restoreRoutine, purgeRoutine, archived,
+    freshStart, startWith,
   } = useTallyWallState();
 
   const envState = useEnvironmentState();
@@ -69,6 +71,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // First run asks what to build before the guide; once answered (or
+  // skipped) it is not asked again this session.
+  const [firstRunOpen, setFirstRunOpen] = useState(false);
+  const [firstRunDone, setFirstRunDone] = useState(false);
+  const replaceStarterRef = useRef(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [groupDates, setGroupDates] = useState(null);
   const [openDay, setOpenDay] = useState(null);
@@ -124,9 +131,17 @@ export default function App() {
   // First run: show the guide once. It is opened from an effect rather than
   // from initial state so that a restored backup, which reloads the page
   // with settings already written, does not reopen it.
+  // A brand-new install is asked what to build first, then shown the guide.
   useEffect(() => {
-    if (settings && settings.seenGuide === false) setGuideOpen(true);
-  }, [settings]);
+    if (!settings || settings.seenGuide !== false || firstRunOpen || addRoutineOpen) return;
+    if (freshStart && !firstRunDone) setFirstRunOpen(true);
+    else setGuideOpen(true);
+  }, [settings, freshStart, firstRunDone, firstRunOpen, addRoutineOpen]);
+
+  function finishFirstRun() {
+    setFirstRunOpen(false);
+    setFirstRunDone(true);
+  }
 
   function closeGuide() {
     SoundFX.close();
@@ -223,6 +238,7 @@ export default function App() {
       if (openDay) { SoundFX.close(); setOpenDay(null); return; }
       // Without the guide and the edit dialog here, Back on either one quit
       // the app instead of closing it.
+      if (firstRunOpen) { finishFirstRun(); return; }
       if (guideOpen) { closeGuide(); return; }
       if (settingsOpen) { SoundFX.close(); setSettingsOpen(false); return; }
       if (addRoutineOpen) { SoundFX.close(); setAddRoutineOpen(false); return; }
@@ -233,7 +249,7 @@ export default function App() {
     return () => { sub.then((h) => h.remove()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, openDay, drawer, showStreakLost,
-    guideOpen, editingRoutine]);
+    guideOpen, editingRoutine, firstRunOpen]);
 
   function handleRerollQuote() {
     setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }, voice.quotes));
@@ -421,7 +437,14 @@ export default function App() {
   }
 
   function handleCreateRoutine(name, startDate, options) {
-    addRoutine(name, startDate, options);
+    // "Something else" on the first run replaces the untouched default
+    // rather than sitting beside it.
+    if (replaceStarterRef.current) {
+      replaceStarterRef.current = false;
+      startWith(name, { ...options, startDate });
+    } else {
+      addRoutine(name, startDate, options);
+    }
     setAddRoutineOpen(false);
     setCalendarCursor(startOfMonth());
     SoundFX.tally();
@@ -583,6 +606,12 @@ export default function App() {
         onSave={handleSaveRoutine}
         habits={habits}
         today={today}
+      />
+      <FirstRunSheet
+        open={firstRunOpen}
+        onPick={(s) => { startWith(s.name, s.options); SoundFX.tally(); finishFirstRun(); }}
+        onOther={() => { replaceStarterRef.current = true; finishFirstRun(); SoundFX.open(); setAddRoutineOpen(true); }}
+        onSkip={() => { SoundFX.close(); finishFirstRun(); }}
       />
       <GuideSheet open={guideOpen} onClose={closeGuide} />
       <ShareCardModal

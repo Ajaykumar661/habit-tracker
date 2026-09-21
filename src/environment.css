@@ -1707,3 +1707,30 @@
 .share-preview img { display: block; width: 100%; max-height: 58vh; max-height: 58dvh; object-fit: contain; }
 .share-drawing { font-size: 9px; color: var(--cream-dim); letter-spacing: 1px; }
 .share-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+/* ---- first run (FirstRunSheet.jsx) ------------------------------------ */
+.first-run-lead { font-size: 9px; line-height: 1.9; color: var(--cream-dim); margin: 0 0 14px; text-align: center; }
+.first-run-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .first-run-grid { grid-template-columns: repeat(2, 1fr); } }
+.first-run-pick {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 10px;
+  color: var(--cream);
+  background: rgba(8, 6, 3, 0.5);
+  border: 2px solid rgba(138, 106, 58, 0.6);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.first-run-pick:hover, .first-run-pick:focus-visible { border-color: var(--amber); background: rgba(224, 164, 88, 0.12); outline: none; }
+.first-run-pick .pixel-icon { grid-template-columns: repeat(8, 4px); grid-template-rows: repeat(8, 4px); }
+.first-run-pick .pixel-icon span { width: 4px; height: 4px; }
+.first-run-pick .pixel-icon span.on { background: var(--amber); }
+.first-run-name { font-size: 9px; letter-spacing: 1px; color: var(--gold-text); }
+.first-run-hint { font-size: 7px; letter-spacing: 0.5px; color: var(--cream-dim); }
+.first-run-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+[data-theme="neon"] .first-run-pick { background: rgba(5, 4, 15, 0.7); border-color: var(--n-cyan-faint); }
+[data-theme="neon"] .first-run-pick:hover, [data-theme="neon"] .first-run-pick:focus-visible { border-color: var(--n-cyan); box-shadow: 0 0 10px rgba(60, 232, 255, 0.3); }

@@ -181,6 +181,13 @@ const medieval = {
     footer: 'KEPT ON TALLY WALL',
   },
 
+  firstRun: {
+    title: 'WHAT WILL YOU BUILD?',
+    lead: 'Pick your first quest. You can change it, or add more, at any time.',
+    other: 'SOMETHING ELSE',
+    skip: 'SKIP FOR NOW',
+  },
+
   day: {
     chronicle: 'THE CHRONICLE',
     perfect: 'A PERFECT DAY',
@@ -420,6 +427,13 @@ const neon = {
     best: (n) => `BEST ${n}`,
     objects: (n, t) => `${n}/${t} UNLOCKED`,
     footer: 'LOGGED ON TALLY WALL',
+  },
+
+  firstRun: {
+    title: 'PICK YOUR FIRST MISSION',
+    lead: 'One tap to boot it up. You can change it, or add more, any time.',
+    other: 'SOMETHING ELSE',
+    skip: 'SKIP FOR NOW',
   },
 
   day: {
