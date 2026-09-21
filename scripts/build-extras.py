@@ -85,10 +85,32 @@ SPOTS = {
             'uptime': (1120, 233, 110), 'hologram': (1220, 233, 60), 'arcade': (330, 745, 70),
         },
         'portrait': {
-            'lavalamp': (215, 470, 28), 'holoplant': (275, 470, 48), 'trophy': (340, 470, 45),
-            'hologram': (410, 470, 55), 'uptime': (510, 470, 95), 'arcade': (600, 470, 55),
+            # packed toward the left so the season's piece gets its own gap
+            # between the arcade and the cat, well inside a phone's crop
+            'lavalamp': (206, 470, 28), 'holoplant': (254, 470, 46), 'trophy': (304, 470, 42),
+            'hologram': (362, 470, 52), 'uptime': (446, 470, 90), 'arcade': (530, 470, 50),
         },
     },
+}
+
+# Where each season's decoration goes (x centre, y bottom, w), per
+# orientation. Only one season shows at a time, so they may share a spot.
+# Medieval has none until its decoration sheet exists.
+SEASON_SPOTS = {
+    # On the shelf with the milestone objects, like something set out for
+    # the season: portrait between the arcade and the cat, landscape in the
+    # gap along the top of the wall between the objects.
+    'neon': {
+        'landscape': {
+            'winter': (780, 233, 190), 'autumn': (780, 233, 72),
+            'spring': (780, 233, 170), 'summer': (780, 233, 36),
+        },
+        'portrait': {
+            'winter': (598, 470, 84), 'autumn': (598, 470, 52),
+            'spring': (598, 470, 80), 'summer': (598, 470, 28),
+        },
+    },
+    'medieval': {'landscape': {}, 'portrait': {}},
 }
 
 # Which milestone objects have a flicker strip, in sheet row order.
@@ -228,7 +250,10 @@ def build(theme, preview=False):
         ds = load(dpath)
         [drow] = layout(ds[..., 3], [4], names['decorations'])
         for season, box in zip(DECORATIONS[theme], drow):
-            manifest['seasons'].setdefault(season, {})['decoration'] = out.sprite(crop(ds, box), f'season-{season}-deco')
+            deco = out.sprite(crop(ds, box), f'season-{season}-deco')
+            deco['spots'] = {o: dict(zip('xyw', SEASON_SPOTS[theme][o][season]))
+                             for o in SEASON_SPOTS[theme] if season in SEASON_SPOTS[theme][o]}
+            manifest['seasons'].setdefault(season, {})['decoration'] = deco
     else:
         print(f'{theme}: no {names["decorations"]} yet -- seasons will have particles only')
 
@@ -252,6 +277,15 @@ def render_previews(theme, manifest):
         for m in manifest['milestones']:
             s = m['spots'][orient]
             img = Image.open(ROOT / 'public' / m['src'].lstrip('/')).convert('RGBA')
+            h = round(img.height * s['w'] / img.width)
+            img = img.resize((s['w'], h), Image.LANCZOS)
+            room.alpha_composite(img, (round(s['x'] - s['w'] / 2), round(s['y'] - h)))
+        for season in manifest['seasons'].values():
+            d = season.get('decoration')
+            if not d or orient not in d.get('spots', {}):
+                continue
+            s = d['spots'][orient]
+            img = Image.open(ROOT / 'public' / d['src'].lstrip('/')).convert('RGBA')
             h = round(img.height * s['w'] / img.width)
             img = img.resize((s['w'], h), Image.LANCZOS)
             room.alpha_composite(img, (round(s['x'] - s['w'] / 2), round(s['y'] - h)))

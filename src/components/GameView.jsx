@@ -14,7 +14,7 @@ import RoomExtras from './RoomExtras';
 // `drawer`/`setDrawer` ('routines' | 'record' | null) are lifted to App so
 // the Android hardware back button can close whichever is open (see
 // App.jsx's backButton listener) without GameView knowing about Capacitor.
-export default function GameView({ envState, theme, streak, best = 0, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
+export default function GameView({ envState, theme, streak, best = 0, season, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
   // Below the breakpoint, swap to the portrait room (archway sits above the
   // wall there, so its own cover-scaled crop keeps the sky in frame — see
   // each theme's portrait set in data/themes). Picked here, before
@@ -69,7 +69,7 @@ export default function GameView({ envState, theme, streak, best = 0, shake, top
               transition={{ duration: 1.6 }}
             />
           </AnimatePresence>
-          <RoomExtras scene={scene} extras={extras} best={best} />
+          <RoomExtras scene={scene} extras={extras} best={best} season={season} sparse={narrowArt} />
           <AnimatePresence initial={false}>
             {scene.fx && <SceneFx key={scene.src} scene={scene} streak={streak} />}
           </AnimatePresence>

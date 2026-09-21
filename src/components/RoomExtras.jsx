@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { earnedMilestones, catLookFor } from '../domain/room';
 import { SoundFX } from '../lib/sound';
 
@@ -9,6 +9,8 @@ import { SoundFX } from '../lib/sound';
 //   the cat's look     a bed at 30 days, her crown at 100 -- drawn in place
 //                      of her sleeping body, on her own ledge
 //   petting            tap her: she wakes, stretches, purrs, settles back
+//   the season         petals, leaves or snow drifting down, and the
+//                      season's decoration where the theme has one
 //
 // Positions are in the room image's own pixels and emitted as percentages,
 // exactly like SceneFx, so everything stays registered to the art.
@@ -16,13 +18,48 @@ import { SoundFX } from '../lib/sound';
 const PET_MS = 2600;      // the whole wake-stretch-purr-settle, once
 const HEART_MS = 1500;
 
-function RoomExtras({ scene, extras, best }) {
+// How each season's particles move: size range (room px), seconds to fall
+// the height of the room, how far they sway, and how much they turn.
+const DRIFT = {
+  spring: { size: [16, 26], fall: [11, 16], sway: [2, 5], spin: 220 },
+  autumn: { size: [18, 30], fall: [9, 14], sway: [3, 7], spin: 540 },
+  winter: { size: [12, 22], fall: [14, 22], sway: [1, 3], spin: 90 },
+};
+
+/** A fixed flurry for a season: the same on every render, varied within. */
+function flurry(season, count) {
+  const d = DRIFT[season];
+  if (!d) return [];
+  let seed = [...season].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) >>> 0;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 2 ** 32;
+  };
+  const span = ([a, b]) => a + (b - a) * rnd();
+  return Array.from({ length: count }, () => {
+    const fall = span(d.fall);
+    return {
+      x: rnd() * 100,
+      size: span(d.size),
+      fall,
+      delay: -rnd() * fall,
+      sway: span(d.sway) * (rnd() < 0.5 ? -1 : 1),
+      swayDur: 2.4 + rnd() * 2.2,
+      spin: (rnd() < 0.5 ? -1 : 1) * d.spin * (0.5 + rnd()),
+    };
+  });
+}
+
+function RoomExtras({ scene, extras, best, season, sparse = false }) {
   const [petting, setPetting] = useState(false);
   const timer = useRef(null);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const pct = (v, of) => `${(v / of) * 100}%`;
   const orient = scene.orientation;
+  const flakes = useMemo(() => flurry(season, sparse ? 10 : 18), [season, sparse]);
+  // a portrait room is drawn about half as large, so its flakes are bigger
+  const flakeScale = orient === 'portrait' ? 1.7 : 1;
   const look = catLookFor(extras?.cat, best);
 
   const pet = useCallback(() => {
@@ -97,6 +134,15 @@ function RoomExtras({ scene, extras, best }) {
         );
       })}
 
+      {(() => {
+        const d = extras.seasons?.[season]?.decoration;
+        const s = d?.spots?.[orient];
+        return s ? (
+          <img className="room-obj room-deco" src={d.src} alt="" draggable="false"
+            style={standing(s.x, s.y, s.w, d.w, d.h)} />
+        ) : null;
+      })()}
+
       {cat && lookSprite && (
         <img className={`room-cat-look${petting ? ' purring' : ''}`} src={lookSprite.src} alt="" draggable="false"
           style={standing(cat.x, cat.floor, cat.w * lookSprite.rel, lookSprite.w, lookSprite.h, true)} />
@@ -128,6 +174,33 @@ function RoomExtras({ scene, extras, best }) {
               animationDelay: `${PET_MS * 0.45}ms, ${PET_MS * 0.45}ms`,
             }} />
         );
+      })()}
+
+      {(() => {
+        const p = extras.seasons?.[season]?.particle;
+        if (!p) return null;
+        // the room's height in cqw, so a flake falls the whole way at any size
+        const fall = `${((scene.height / scene.width) * 100 * 1.08).toFixed(2)}cqw`;
+        return flakes.map((f, i) => (
+          <span key={`p${i}`} className="room-fall"
+            style={{
+              left: `${f.x}%`,
+              width: pct(f.size * flakeScale, scene.width),
+              height: pct((f.size * flakeScale * p.h) / p.w, scene.height),
+              '--fall': fall,
+              animationDuration: `${f.fall}s`,
+              animationDelay: `${f.delay}s`,
+            }}>
+            <span className="room-flake"
+              style={{
+                backgroundImage: `url(${p.src})`,
+                '--sway': `${f.sway}cqw`,
+                '--spin': `${f.spin}deg`,
+                animationDuration: `${f.swayDur}s, ${f.fall}s`,
+                animationDelay: `${f.delay}s, ${f.delay}s`,
+              }} />
+          </span>
+        ));
       })()}
 
       {cat && (

@@ -1599,3 +1599,18 @@
   .room-flicker, .room-flicker-uptime, .room-cat-look, .room-cat-look.purring { animation: none; }
   .room-cat-heart { animation: none; opacity: 1; }
 }
+
+/* ---- the season: particles drift down the whole room ------------------ */
+.room-fall { top: -6%; animation: room-fall linear infinite; will-change: translate; }
+.room-flake {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+  animation: room-sway ease-in-out infinite alternate, room-spin linear infinite;
+}
+@keyframes room-fall { from { translate: 0 0; } to { translate: 0 var(--fall); } }
+@keyframes room-sway { from { translate: calc(var(--sway) * -1) 0; } to { translate: var(--sway) 0; } }
+@keyframes room-spin { from { rotate: 0deg; } to { rotate: var(--spin); } }
+@media (prefers-reduced-motion: reduce) { .room-fall { display: none; } }

@@ -13,7 +13,7 @@ import Achievements from './components/Achievements';
 import KingdomReport from './components/KingdomReport';
 import RallyStrip from './components/RallyStrip';
 import { getRecovery } from './domain/recovery';
-import { bestStreakOf } from './domain/room';
+import { bestStreakOf, seasonOf } from './domain/room';
 import { musicFor } from './data/themes';
 import { voiceFor } from './data/voice';
 import { VoiceContext } from './hooks/useVoice';
@@ -80,6 +80,8 @@ export default function App() {
   const voice = voiceFor(settings?.theme);
   // The room is furnished by the best run ever, across every routine.
   const best = useMemo(() => bestStreakOf([...routines, ...archived], today), [routines, archived, today]);
+  // The season comes from the date. In development `?season=winter` previews one.
+  const season = (import.meta.env.DEV && new URLSearchParams(window.location.search).get('season')) || seasonOf(today);
   useReminders({ habits, completions, settings, words: voice.remind.words });
   useWidget({
     habits, completions, activeRoutine, streak: stats.currentStreak, today,
@@ -457,6 +459,7 @@ export default function App() {
         theme={theme}
         streak={stats.currentStreak}
         best={best}
+        season={season}
         shake={appControls}
         drawer={drawer}
         setDrawer={setDrawer}
