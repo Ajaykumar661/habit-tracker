@@ -1360,7 +1360,7 @@
   /* clears the mobile tab bar, which is fixed to the bottom edge */
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
   left: 10px;
-  z-index: 10002;
+  z-index: 9000;   /* above the room, below dialogs (9999) */
   display: flex;
   gap: 4px;
   background: rgba(0, 0, 0, 0.75);
