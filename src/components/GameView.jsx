@@ -4,6 +4,7 @@ import { sceneFor, themeFor } from '../data/themes';
 import { useSceneLayout, useIsNarrowViewport } from '../hooks/useSceneLayout';
 import BottomTabBar from './BottomTabBar';
 import SceneFx from './SceneFx';
+import RoomExtras from './RoomExtras';
 
 // The "game screen": a fixed, full-viewport room with the HUD around it.
 //   room art + tally wall   (world)
@@ -13,7 +14,7 @@ import SceneFx from './SceneFx';
 // `drawer`/`setDrawer` ('routines' | 'record' | null) are lifted to App so
 // the Android hardware back button can close whichever is open (see
 // App.jsx's backButton listener) without GameView knowing about Capacitor.
-export default function GameView({ envState, theme, streak, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
+export default function GameView({ envState, theme, streak, best = 0, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
   // Below the breakpoint, swap to the portrait room (archway sits above the
   // wall there, so its own cover-scaled crop keeps the sky in frame — see
   // each theme's portrait set in data/themes). Picked here, before
@@ -21,7 +22,7 @@ export default function GameView({ envState, theme, streak, shake, topBar, title
   // frame's own regions -- which differ between themes as well.
   const narrowArt = useIsNarrowViewport();
   const scene = sceneFor(envState, narrowArt, theme);
-  const { wall: wallArt, id: themeId } = themeFor(theme);
+  const { wall: wallArt, id: themeId, extras } = themeFor(theme);
   const { layout, bottomRef } = useSceneLayout(scene);
   const { canvas, collapsed, hudWidth, bottomTop, bottomCenter, bottomMaxWidth, wallInset } = layout;
 
@@ -68,6 +69,7 @@ export default function GameView({ envState, theme, streak, shake, topBar, title
               transition={{ duration: 1.6 }}
             />
           </AnimatePresence>
+          <RoomExtras scene={scene} extras={extras} best={best} />
           <AnimatePresence initial={false}>
             {scene.fx && <SceneFx key={scene.src} scene={scene} streak={streak} />}
           </AnimatePresence>

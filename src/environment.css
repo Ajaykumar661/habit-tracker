@@ -1524,3 +1524,78 @@
   border: 1px solid var(--bronze);
 }
 .dev-env-switcher button.active { background: var(--bronze); color: #111; }
+
+/* ============================================================
+   The room that grows (RoomExtras.jsx): milestone objects, the cat's
+   bed and crown, and petting her.
+   ============================================================ */
+.room-extras { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.room-extras > * { position: absolute; }
+.room-obj { image-rendering: auto; user-select: none; }
+.room-flicker, .room-cat-pet, .room-cat-heart {
+  background-repeat: no-repeat;
+  background-position-x: 0%;
+}
+/* a candle's flame, a lava lamp's blobs */
+.room-flicker { animation: fx-f4 0.7s steps(1, end) infinite; }
+.room-flicker-lavalamp { animation-duration: 3.6s; }
+/* a neon tube that is mostly lit and only now and then buzzes */
+.room-flicker-uptime { animation: room-buzz 7s steps(1, end) infinite; }
+@keyframes room-buzz {
+  0%, 88%    { background-position-x: 0%; }
+  89%, 90%   { background-position-x: 66.667%; }
+  91%        { background-position-x: 33.333%; }
+  92%, 93%   { background-position-x: 100%; }
+  94%, 100%  { background-position-x: 0%; }
+}
+
+/* Her sleeping body (SceneFx) steps aside while a look or petting is drawn
+   in its place; her ledge stays. */
+.scene-canvas:has(.room-extras[data-cat-away]) .fx-cat { visibility: hidden; }
+/* awake, or in her bed with a look of her own: no snoring Zs */
+.scene-canvas:has(.room-extras[data-petting]) .fx-zzz { visibility: hidden; }
+
+.room-cat-look { transform-origin: 50% 100%; animation: room-breathe 4.6s ease-in-out infinite; }
+.room-cat-look.purring { animation: room-purr 0.18s steps(2, end) 10, room-breathe 4.6s ease-in-out infinite; }
+@keyframes room-breathe { 0%, 100% { scale: 1 1; } 45% { scale: 1.006 1.02; } }
+@keyframes room-purr { 0% { translate: 0 0; } 100% { translate: 0.6% 0; } }
+
+/* wake, twitch, eyes open, stretch, purr, purr, settle, asleep -- once */
+.room-cat-pet { animation-name: room-pet; animation-timing-function: steps(1, end); animation-fill-mode: both; }
+@keyframes room-pet {
+  0%, 9.99%      { background-position-x: 0%; }
+  10%, 19.99%    { background-position-x: 14.286%; }
+  20%, 31.99%    { background-position-x: 28.571%; }
+  32%, 49.99%    { background-position-x: 42.857%; }
+  50%, 62.99%    { background-position-x: 57.143%; }
+  63%, 75.99%    { background-position-x: 71.429%; }
+  76%, 87.99%    { background-position-x: 85.714%; }
+  88%, 100%      { background-position-x: 100%; }
+}
+.room-cat-heart {
+  opacity: 0;
+  animation-name: fx-f3, room-heart-rise;
+  animation-timing-function: steps(1, end), ease-out;
+  animation-fill-mode: both, both;
+}
+@keyframes room-heart-rise {
+  0%   { opacity: 0; translate: 0 0; }
+  10%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; translate: 0 -60%; }
+}
+
+.room-cat-hit {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.room-cat-hit:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-flicker, .room-flicker-uptime, .room-cat-look, .room-cat-look.purring { animation: none; }
+  .room-cat-heart { animation: none; opacity: 1; }
+}
