@@ -83,6 +83,13 @@ function createSoundFX() {
     torch() {
       tone(180, 0.08, { type: 'triangle', vol: 0.1, slideTo: 260 });
     },
+    /** The cat, petted: a low rumbling purr, then a small happy chirp. */
+    purr() {
+      for (let i = 0; i < 12; i += 1) {
+        tone(i % 2 ? 62 : 74, 0.07, { type: 'triangle', vol: 0.16, delay: 0.25 + i * 0.09 });
+      }
+      tone(880, 0.09, { type: 'square', vol: 0.06, slideTo: 1320, delay: 1.45 });
+    },
   };
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadOrInitState, saveState } from '../lib/storage';
 import { createHabit, createCompletion, DEFAULT_SETTINGS, THEME_IDS } from '../domain/schema';
 import { computeStats } from '../domain/streaks';
+import { isUntouchedStart } from '../domain/starters';
 import { isComplete, valueOf, stepFor, targetFor } from '../domain/completion';
 import { computeProgression } from '../domain/xp';
 import { buildQuestBoard } from '../domain/quests';
@@ -80,6 +81,18 @@ export function useTallyWallState() {
       completions: { ...s.completions, [habit.id]: {} },
       activeHabitId: habit.id,
     }));
+    return habit;
+  }
+
+  /**
+   * First run: swap the untouched default routine for the one the user
+   * picked. Only ever on a record with nothing in it (isUntouchedStart); on
+   * anything else it simply adds, so no one's history can be replaced.
+   */
+  function startWith(name, options = {}) {
+    if (!isUntouchedStart(state)) return addRoutine(name, options.startDate, options);
+    const habit = createHabit({ ...options, name, startDate: options.startDate || today });
+    setState((s) => ({ ...s, habits: [habit], completions: { [habit.id]: {} }, activeHabitId: habit.id }));
     return habit;
   }
 
@@ -304,6 +317,8 @@ export function useTallyWallState() {
   }
 
   return {
+    freshStart: isUntouchedStart(state),
+    startWith,
     routines,
     activeRoutine,
     stats,

@@ -9,3 +9,4 @@ __pycache__/
 # generated caches -- never commit
 .vite/
 .eval/
+.preview/

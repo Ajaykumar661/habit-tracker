@@ -226,9 +226,16 @@ FRAMES = {
         'shafts': [(70, 120, 300, 470)],
         'lanterns': [(466, 367, 44), (1334, 367, 44), (47, 598, 42)],
         'cat': (1558, 606),
-        # The painted cat is already in the clear here (it sits below the
-        # record panel), so no sprite is needed — the Zs anchor to the art.
-        'cat_sprite': None,
+        # The painted cat sits at the far right, which on a desktop is under
+        # the record panel or cropped off the screen, so she could never be
+        # petted. A live cat sleeps on the wooden stool left of the wall
+        # instead -- in view at every desktop size, clear of the tallies --
+        # and the Zs move to her; the painted one stays, asleep.
+        # (x, bottom-y, width) -- her slab sits on that baseline.
+        'cat_sprite': (345, 698, 84),
+        # Zs the same size as the phone cat's (her own are sized for the
+        # small painted cat): widths, and how far they rise
+        'zzz_size': ((19, 26, 33), 100),
         'scale': 1.0,
     },
     'portrait': {
@@ -840,9 +847,10 @@ def main():
                 # the sprite's head is toward its left end
                 cx, cy = round(sx - sw * 0.16, 1), round(sy - sh * 0.82, 1)
 
-            out['zzz'] = [{'s': f'zzz-{i}', 'x': cx, 'y': cy, 'w': sized(13 + i * 5),
+            zw, zrise = geo.get('zzz_size') or ([sized(13 + i * 5) for i in range(3)], round(70 * S, 1))
+            out['zzz'] = [{'s': f'zzz-{i}', 'x': cx, 'y': cy, 'w': zw[i],
                            'dur': 5.4, 'delay': round(-i * 1.8, 2),
-                           'rise': round(70 * S, 1)} for i in range(3)]
+                           'rise': zrise} for i in range(3)]
 
             # nothing may cover the tally wall
             wx0, wy0, wx1, wy1 = geo['wall']

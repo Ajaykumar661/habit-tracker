@@ -13,6 +13,8 @@
 import { THEME_IDS, DEFAULT_THEME } from '../../domain/schema';
 import medievalFx from './medieval/sceneFx.json';
 import neonFx from './neon/sceneFx.json';
+import medievalExtras from './medieval/extras.json';
+import neonExtras from './neon/extras.json';
 
 const base = (id) => `/assets/themes/${id}`;
 
@@ -77,6 +79,8 @@ const medieval = {
   },
   // One neutral stone panel, tiled square at the room's own stone size.
   wall: { src: `${base('medieval')}/environment/wall-surface.png`, tile: '24cqw 24cqw' },
+  // milestone objects, the cat's looks and the seasons (build-extras.py)
+  extras: medievalExtras,
 };
 
 // ---- Neon City ----------------------------------------------------------
@@ -115,6 +119,7 @@ const neon = {
   // at its own 1.633:1 aspect rather than squashed square; each panel comes
   // out about 14cqw wide.
   wall: { src: `${base('neon')}/environment/wall-surface.png`, tile: '42cqw 25.72cqw' },
+  extras: neonExtras,
 };
 
 export const THEMES = { medieval, neon };

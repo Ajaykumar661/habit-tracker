@@ -132,6 +132,62 @@ const medieval = {
     saved: (t, r) => `SAVED ${t} TALLIES FROM ${r} ROUTINE${r === 1 ? '' : 'S'}`,
   },
 
+  remind: {
+    label: 'DAILY REMINDER',
+    help: 'One nudge a day at the hour you choose, and only if a quest is still open. Once your mark is made, the keep stays quiet.',
+    denied: 'NOTIFICATIONS ARE BLOCKED — ALLOW THEM IN YOUR PHONE’S SETTINGS',
+    webOnly: 'Reminders ring from the Android app. A browser tab cannot wake itself.',
+    words: {
+      title: 'TALLY WALL',
+      one: (name) => `${name} still waits for today’s mark.`,
+      start: ({ name, target }) => `${name}: ${target} today. The first is the hardest.`,
+      partway: ({ name, done, target, left }) => `${name}: ${done} of ${target} so far. ${left} more and the mark is yours.`,
+      many: (n, list) => `${n} quests still open: ${list}.`,
+    },
+  },
+
+  widget: { day: 'DAY', done: 'DONE', allDone: 'ALL DONE', rest: 'A DAY OF REST', stale: 'OPEN THE WALL' },
+
+  // The room that grows (RoomExtras): what each object is called, and why
+  // it is there. Earned by the best run ever, so the words say "earned".
+  room: {
+    title: 'THE ROOM',
+    names: {
+      candle: 'THE FIRST CANDLE', herb: 'A POTTED HERB', goblet: 'THE BRONZE GOBLET',
+      banner: 'THE LAUREL BANNER', crown: 'THE CROWN', armour: 'THE WARDEN’S ARMOUR',
+    },
+    earned: (d) => `EARNED FOR A ${d}-DAY STREAK`,
+    fresh: 'NEW IN THE KEEP',
+    decos: { winter: 'A WINTER WREATH', spring: 'SPRING TULIPS', summer: 'A JAR OF FIREFLIES', autumn: 'THE HARVEST' },
+    season: 'THIS SEASON’S DECORATION',
+    cat: { bed: 'HER CUSHION', crown: 'HER CROWN' },
+    count: (n, total) => `${n} / ${total} EARNED`,
+    next: (name, d) => `NEXT: ${name} AT ${d} DAYS`,
+    done: 'THE KEEP IS COMPLETE',
+  },
+
+  share: {
+    button: 'SHARE MY WALL',
+    title: 'YOUR WALL, AS A PICTURE',
+    drawing: 'CARVING YOUR CARD...',
+    share: 'SHARE',
+    save: 'SAVE IMAGE',
+    shared: 'SENT FORTH',
+    saved: 'SAVED TO YOUR DOWNLOADS',
+    failed: 'THE CARD COULD NOT BE DRAWN',
+    day: 'DAY',
+    best: (n) => `BEST ${n}`,
+    objects: (n, t) => `${n}/${t} TROPHIES`,
+    footer: 'KEPT ON TALLY WALL',
+  },
+
+  firstRun: {
+    title: 'WHAT WILL YOU BUILD?',
+    lead: 'Pick your first quest. You can change it, or add more, at any time.',
+    other: 'SOMETHING ELSE',
+    skip: 'SKIP FOR NOW',
+  },
+
   day: {
     chronicle: 'THE CHRONICLE',
     perfect: 'A PERFECT DAY',
@@ -324,6 +380,60 @@ const neon = {
     retired: 'ARCHIVED MISSIONS',
     retiredHelp: 'Their logs are kept. Restore one to put it back in rotation.',
     saved: (t, r) => `SAVED ${t} LOGS FROM ${r} MISSION${r === 1 ? '' : 'S'}`,
+  },
+
+  remind: {
+    label: 'DAILY PING',
+    help: 'One ping a day at the time you set, and only if a mission is still pending. Log it and the channel goes quiet.',
+    denied: 'NOTIFICATIONS ARE BLOCKED — ALLOW THEM IN YOUR PHONE’S SETTINGS',
+    webOnly: 'Pings come from the Android app. A browser tab cannot wake itself.',
+    words: {
+      title: 'TALLY WALL',
+      one: (name) => `${name} is still pending today.`,
+      start: ({ name, target }) => `${name}: 0 of ${target} logged. Boot it up.`,
+      partway: ({ name, done, target, left }) => `${name}: ${done} of ${target} logged. ${left} left to clear it.`,
+      many: (n, list) => `${n} missions pending: ${list}.`,
+    },
+  },
+
+  widget: { day: 'DAY', done: 'LOGGED', allDone: 'ALL CLEAR', rest: 'NO MISSIONS', stale: 'RECONNECT' },
+
+  room: {
+    title: 'THE HIDEOUT',
+    names: {
+      lavalamp: 'A LAVA LAMP', holoplant: 'A HOLO PLANT', trophy: 'THE CHROME TROPHY',
+      uptime: 'THE UPTIME SIGN', arcade: 'AN ARCADE CABINET', hologram: 'THE HOLOGRAM',
+    },
+    earned: (d) => `UNLOCKED BY A ${d}-DAY STREAK`,
+    fresh: 'NEW IN THE HIDEOUT',
+    decos: { winter: 'FROST LIGHTS', spring: 'NEON BLOSSOM', summer: 'A SUMMER CAN', autumn: 'THE HOLO PUMPKIN' },
+    season: 'SEASONAL MOD',
+    cat: { bed: 'HER POD', crown: 'HER VISOR' },
+    count: (n, total) => `${n} / ${total} UNLOCKED`,
+    next: (name, d) => `NEXT: ${name} AT ${d} DAYS`,
+    done: 'HIDEOUT FULLY LOADED',
+  },
+
+  share: {
+    button: 'SHARE MY WALL',
+    title: 'EXPORT YOUR WALL',
+    drawing: 'RENDERING...',
+    share: 'SHARE',
+    save: 'SAVE IMAGE',
+    shared: 'TRANSMITTED',
+    saved: 'SAVED TO YOUR DOWNLOADS',
+    failed: 'RENDER FAILED',
+    day: 'DAY',
+    best: (n) => `BEST ${n}`,
+    objects: (n, t) => `${n}/${t} UNLOCKED`,
+    footer: 'LOGGED ON TALLY WALL',
+  },
+
+  firstRun: {
+    title: 'PICK YOUR FIRST MISSION',
+    lead: 'One tap to boot it up. You can change it, or add more, any time.',
+    other: 'SOMETHING ELSE',
+    skip: 'SKIP FOR NOW',
   },
 
   day: {

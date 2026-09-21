@@ -1032,6 +1032,33 @@
   margin: 14px 0 6px;
 }
 .settings-row .pixel-btn { display: inline-flex; align-items: center; gap: 6px; }
+.settings-row-flush { margin-top: 0; }
+.settings-row-flush .settings-label { margin: 0; }
+.settings-row .pixel-btn:disabled { opacity: 0.4; }
+/* the reminder hour: a carved slot, not a browser dropdown */
+.settings-time {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 8.5px;
+  color: var(--cream-dim);
+  letter-spacing: 1px;
+  margin: 0 0 6px;
+}
+.settings-time select {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--gold-text);
+  background: rgba(8, 6, 3, 0.7);
+  border: 2px solid var(--hud-wood-edge);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.settings-time select:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+.settings-time option { background: var(--panel); color: var(--cream); }
 /* ---- volume: a carved channel and a brass knob that shows what it moves */
 .vol-slider {
   --vol-track: rgba(8, 6, 3, 0.7);
@@ -1497,3 +1524,213 @@
   border: 1px solid var(--bronze);
 }
 .dev-env-switcher button.active { background: var(--bronze); color: #111; }
+
+/* ============================================================
+   The room that grows (RoomExtras.jsx): milestone objects, the cat's
+   bed and crown, and petting her.
+   ============================================================ */
+.room-extras { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.room-extras > * { position: absolute; }
+.room-obj { image-rendering: auto; user-select: none; }
+.room-flicker, .room-cat-pet, .room-cat-heart {
+  background-repeat: no-repeat;
+  background-position-x: 0%;
+}
+/* a candle's flame, a lava lamp's blobs */
+.room-flicker { animation: fx-f4 0.7s steps(1, end) infinite; }
+.room-flicker-lavalamp { animation-duration: 3.6s; }
+/* a neon tube that is mostly lit and only now and then buzzes */
+.room-flicker-uptime { animation: room-buzz 7s steps(1, end) infinite; }
+@keyframes room-buzz {
+  0%, 88%    { background-position-x: 0%; }
+  89%, 90%   { background-position-x: 66.667%; }
+  91%        { background-position-x: 33.333%; }
+  92%, 93%   { background-position-x: 100%; }
+  94%, 100%  { background-position-x: 0%; }
+}
+
+/* Her sleeping body (SceneFx) steps aside while a look or petting is drawn
+   in its place; her ledge stays. */
+.scene-canvas:has(.room-extras[data-cat-away]) .fx-cat { visibility: hidden; }
+/* awake, or in her bed with a look of her own: no snoring Zs */
+.scene-canvas:has(.room-extras[data-petting]) .fx-zzz { visibility: hidden; }
+
+.room-cat-look { transform-origin: 50% 100%; animation: room-breathe 4.6s ease-in-out infinite; }
+.room-cat-look.purring { animation: room-purr 0.18s steps(2, end) 10, room-breathe 4.6s ease-in-out infinite; }
+@keyframes room-breathe { 0%, 100% { scale: 1 1; } 45% { scale: 1.006 1.02; } }
+@keyframes room-purr { 0% { translate: 0 0; } 100% { translate: 0.6% 0; } }
+
+/* wake, twitch, eyes open, stretch, purr, purr, settle, asleep -- once */
+.room-cat-pet { animation-name: room-pet; animation-timing-function: steps(1, end); animation-fill-mode: both; }
+@keyframes room-pet {
+  0%, 9.99%      { background-position-x: 0%; }
+  10%, 19.99%    { background-position-x: 14.286%; }
+  20%, 31.99%    { background-position-x: 28.571%; }
+  32%, 49.99%    { background-position-x: 42.857%; }
+  50%, 62.99%    { background-position-x: 57.143%; }
+  63%, 75.99%    { background-position-x: 71.429%; }
+  76%, 87.99%    { background-position-x: 85.714%; }
+  88%, 100%      { background-position-x: 100%; }
+}
+.room-cat-heart {
+  opacity: 0;
+  animation-name: fx-f3, room-heart-rise;
+  animation-timing-function: steps(1, end), ease-out;
+  animation-fill-mode: both, both;
+}
+@keyframes room-heart-rise {
+  0%   { opacity: 0; translate: 0 0; }
+  10%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; translate: 0 -60%; }
+}
+
+.room-cat-hit {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.room-cat-hit:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-flicker, .room-flicker-uptime, .room-cat-look, .room-cat-look.purring { animation: none; }
+  .room-cat-heart { animation: none; opacity: 1; }
+}
+
+/* ---- the season: particles drift down the whole room ------------------ */
+.room-fall { top: -6%; animation: room-fall linear infinite; will-change: translate; }
+.room-flake {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+  animation: room-sway ease-in-out infinite alternate, room-spin linear infinite;
+}
+@keyframes room-fall { from { translate: 0 0; } to { translate: 0 var(--fall); } }
+@keyframes room-sway { from { translate: calc(var(--sway) * -1) 0; } to { translate: var(--sway) 0; } }
+@keyframes room-spin { from { rotate: 0deg; } to { rotate: var(--spin); } }
+@media (prefers-reduced-motion: reduce) { .room-fall { display: none; } }
+
+/* ---- what each object is: tap for a plaque; a new one sparkles -------- */
+.room-obj { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.room-new { animation: room-new 1.1s ease-in-out 5; }
+.room-new.room-flicker { animation: fx-f4 0.7s steps(1, end) infinite, room-new 1.1s ease-in-out 5; }
+@keyframes room-new {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 230, 150, 0)); }
+  50%      { filter: drop-shadow(0 0 6px rgba(255, 230, 150, 0.95)) brightness(1.15); }
+}
+.room-label {
+  z-index: 4;
+  translate: -50% calc(-100% - 6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px 6px;
+  white-space: nowrap;
+  font-size: max(0.62cqw, 8px);
+  letter-spacing: 1px;
+  color: var(--gold-text);
+  background: rgba(20, 13, 6, 0.94);
+  border: 2px solid var(--hud-wood-edge);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 3px 4px 0 rgba(0, 0, 0, 0.4);
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  animation: room-label-in 0.18s ease-out;
+}
+.room-label-sub { font-size: 0.8em; color: var(--cream-dim); }
+.room-label.fresh { border-color: var(--amber); }
+.room-label.fresh .room-label-title { color: var(--amber); }
+@keyframes room-label-in { from { opacity: 0; translate: -50% calc(-100% + 2px); } }
+[data-theme="neon"] .room-label {
+  background: rgba(5, 4, 15, 0.94);
+  border-color: var(--n-cyan-soft);
+  box-shadow: 0 0 0 2px #000, 0 0 12px rgba(60, 232, 255, 0.3);
+}
+[data-theme="neon"] .room-label.fresh { border-color: var(--n-pink); }
+@media (prefers-reduced-motion: reduce) { .room-new, .room-label { animation: none; } }
+
+/* ---- the room, in the ledger (RoomProgress.jsx) ----------------------- */
+.room-progress {
+  margin-bottom: 14px;
+  padding: 9px 10px 8px;
+  background: rgba(138, 106, 58, 0.16);
+  border: 1px solid var(--bronze);
+  box-shadow: inset 0 0 0 1px rgba(255, 245, 215, 0.06);
+}
+.room-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.room-progress-title { font-size: 9px; color: var(--gold-text); letter-spacing: 2px; text-shadow: 1px 1px 0 #000; }
+.room-progress-count { font-size: 7px; color: var(--cream-dim); letter-spacing: 1px; }
+.room-progress-row {
+  list-style: none;
+  margin: 8px 0 6px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.room-progress-row li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px 3px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(138, 106, 58, 0.35);
+}
+.room-progress-row img { width: 100%; height: 30px; object-fit: contain; }
+.room-progress-row .locked img { filter: brightness(0) opacity(0.45); }
+.room-progress-row .got { border-color: rgba(224, 164, 88, 0.7); }
+.room-progress-day { font-size: 6.5px; color: var(--cream-dim); letter-spacing: 0.5px; }
+.room-progress-row .got .room-progress-day { color: var(--amber); }
+.room-progress-next { font-size: 6.5px; color: var(--amber-dim); letter-spacing: 0.5px; line-height: 1.6; }
+[data-theme="neon"] .room-progress { background: rgba(9, 7, 24, 0.7); border-color: var(--n-violet); }
+[data-theme="neon"] .room-progress-row li { border-color: var(--n-cyan-faint); }
+[data-theme="neon"] .room-progress-row .got { border-color: var(--n-cyan-soft); box-shadow: 0 0 6px rgba(60, 232, 255, 0.25); }
+[data-theme="neon"] .room-progress-row .locked img { filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(60, 232, 255, 0.5)); }
+
+/* ---- share card (ShareCardModal.jsx) ---------------------------------- */
+.room-share { width: 100%; margin-top: 8px; }
+.share-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  margin: 4px 0 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--bronze);
+}
+.share-preview img { display: block; width: 100%; max-height: 58vh; max-height: 58dvh; object-fit: contain; }
+.share-drawing { font-size: 9px; color: var(--cream-dim); letter-spacing: 1px; }
+.share-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+/* ---- first run (FirstRunSheet.jsx) ------------------------------------ */
+.first-run-lead { font-size: 9px; line-height: 1.9; color: var(--cream-dim); margin: 0 0 14px; text-align: center; }
+.first-run-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .first-run-grid { grid-template-columns: repeat(2, 1fr); } }
+.first-run-pick {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 10px;
+  color: var(--cream);
+  background: rgba(8, 6, 3, 0.5);
+  border: 2px solid rgba(138, 106, 58, 0.6);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.first-run-pick:hover, .first-run-pick:focus-visible { border-color: var(--amber); background: rgba(224, 164, 88, 0.12); outline: none; }
+.first-run-pick .pixel-icon { grid-template-columns: repeat(8, 4px); grid-template-rows: repeat(8, 4px); }
+.first-run-pick .pixel-icon span { width: 4px; height: 4px; }
+.first-run-pick .pixel-icon span.on { background: var(--amber); }
+.first-run-name { font-size: 9px; letter-spacing: 1px; color: var(--gold-text); }
+.first-run-hint { font-size: 7px; letter-spacing: 0.5px; color: var(--cream-dim); }
+.first-run-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+[data-theme="neon"] .first-run-pick { background: rgba(5, 4, 15, 0.7); border-color: var(--n-cyan-faint); }
+[data-theme="neon"] .first-run-pick:hover, [data-theme="neon"] .first-run-pick:focus-visible { border-color: var(--n-cyan); box-shadow: 0 0 10px rgba(60, 232, 255, 0.3); }

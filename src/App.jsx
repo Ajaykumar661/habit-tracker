@@ -13,6 +13,7 @@ import Achievements from './components/Achievements';
 import KingdomReport from './components/KingdomReport';
 import RallyStrip from './components/RallyStrip';
 import { getRecovery } from './domain/recovery';
+import { bestStreakOf, seasonOf } from './domain/room';
 import { musicFor } from './data/themes';
 import { voiceFor } from './data/voice';
 import { VoiceContext } from './hooks/useVoice';
@@ -30,8 +31,13 @@ import QuotePlaque from './components/QuotePlaque';
 import DevEnvSwitcher from './components/DevEnvSwitcher';
 import GameView from './components/GameView';
 import LevelPlaque from './components/LevelPlaque';
+import RoomProgress from './components/RoomProgress';
+import ShareCardModal from './components/ShareCardModal';
+import FirstRunSheet from './components/FirstRunSheet';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
+import { useReminders } from './hooks/useReminders';
+import { useWidget } from './hooks/useWidget';
 import { SoundFX } from './lib/sound';
 import { Music } from './lib/music';
 import { pickQuote } from './data/quotes';
@@ -53,6 +59,7 @@ export default function App() {
     acknowledgeStreakLoss, acknowledgeShield, today, progression, addProgress,
     board, advanceQuest, habits, completions, notes, setNote, setBreakReason,
     settings, setSetting, editRoutine, restoreRoutine, purgeRoutine, archived,
+    freshStart, startWith,
   } = useTallyWallState();
 
   const envState = useEnvironmentState();
@@ -63,6 +70,12 @@ export default function App() {
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  // First run asks what to build before the guide; once answered (or
+  // skipped) it is not asked again this session.
+  const [firstRunOpen, setFirstRunOpen] = useState(false);
+  const [firstRunDone, setFirstRunDone] = useState(false);
+  const replaceStarterRef = useRef(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [groupDates, setGroupDates] = useState(null);
   const [openDay, setOpenDay] = useState(null);
@@ -75,6 +88,15 @@ export default function App() {
   // The active world's words: labels, ranks, quotes. Everything below the
   // provider reads them through useVoice().
   const voice = voiceFor(settings?.theme);
+  // The room is furnished by the best run ever, across every routine.
+  const best = useMemo(() => bestStreakOf([...routines, ...archived], today), [routines, archived, today]);
+  // The season comes from the date. In development `?season=winter` previews one.
+  const season = (import.meta.env.DEV && new URLSearchParams(window.location.search).get('season')) || seasonOf(today);
+  useReminders({ habits, completions, settings, words: voice.remind.words });
+  useWidget({
+    habits, completions, activeRoutine, streak: stats.currentStreak, today,
+    theme: settings?.theme, cutoffHour: settings?.dayCutoffHour ?? 0, words: voice.widget,
+  });
   const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }, voice.quotes));
 
   const markBtnRef = useRef(null);
@@ -109,9 +131,17 @@ export default function App() {
   // First run: show the guide once. It is opened from an effect rather than
   // from initial state so that a restored backup, which reloads the page
   // with settings already written, does not reopen it.
+  // A brand-new install is asked what to build first, then shown the guide.
   useEffect(() => {
-    if (settings && settings.seenGuide === false) setGuideOpen(true);
-  }, [settings]);
+    if (!settings || settings.seenGuide !== false || firstRunOpen || addRoutineOpen) return;
+    if (freshStart && !firstRunDone) setFirstRunOpen(true);
+    else setGuideOpen(true);
+  }, [settings, freshStart, firstRunDone, firstRunOpen, addRoutineOpen]);
+
+  function finishFirstRun() {
+    setFirstRunOpen(false);
+    setFirstRunDone(true);
+  }
 
   function closeGuide() {
     SoundFX.close();
@@ -208,6 +238,7 @@ export default function App() {
       if (openDay) { SoundFX.close(); setOpenDay(null); return; }
       // Without the guide and the edit dialog here, Back on either one quit
       // the app instead of closing it.
+      if (firstRunOpen) { finishFirstRun(); return; }
       if (guideOpen) { closeGuide(); return; }
       if (settingsOpen) { SoundFX.close(); setSettingsOpen(false); return; }
       if (addRoutineOpen) { SoundFX.close(); setAddRoutineOpen(false); return; }
@@ -218,7 +249,7 @@ export default function App() {
     return () => { sub.then((h) => h.remove()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, openDay, drawer, showStreakLost,
-    guideOpen, editingRoutine]);
+    guideOpen, editingRoutine, firstRunOpen]);
 
   function handleRerollQuote() {
     setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }, voice.quotes));
@@ -406,7 +437,14 @@ export default function App() {
   }
 
   function handleCreateRoutine(name, startDate, options) {
-    addRoutine(name, startDate, options);
+    // "Something else" on the first run replaces the untouched default
+    // rather than sitting beside it.
+    if (replaceStarterRef.current) {
+      replaceStarterRef.current = false;
+      startWith(name, { ...options, startDate });
+    } else {
+      addRoutine(name, startDate, options);
+    }
     setAddRoutineOpen(false);
     setCalendarCursor(startOfMonth());
     SoundFX.tally();
@@ -446,6 +484,10 @@ export default function App() {
         envState={envState}
         theme={theme}
         streak={stats.currentStreak}
+        best={best}
+        season={season}
+        roomSeen={settings?.roomSeen ?? 0}
+        onRoomSeen={(day) => setSetting('roomSeen', day)}
         shake={appControls}
         drawer={drawer}
         setDrawer={setDrawer}
@@ -482,6 +524,7 @@ export default function App() {
         right={() => (
           <>
             <LevelPlaque progression={progression} />
+            <RoomProgress theme={theme} best={best} onShare={() => { SoundFX.open(); setShareOpen(true); }} />
             <StatsPanel stats={stats} progression={progression} />
             <Achievements
               routine={activeRoutine}
@@ -564,7 +607,21 @@ export default function App() {
         habits={habits}
         today={today}
       />
+      <FirstRunSheet
+        open={firstRunOpen}
+        onPick={(s) => { startWith(s.name, s.options); SoundFX.tally(); finishFirstRun(); }}
+        onOther={() => { replaceStarterRef.current = true; finishFirstRun(); SoundFX.open(); setAddRoutineOpen(true); }}
+        onSkip={() => { SoundFX.close(); finishFirstRun(); }}
+      />
       <GuideSheet open={guideOpen} onClose={closeGuide} />
+      <ShareCardModal
+        open={shareOpen}
+        onClose={() => { SoundFX.close(); setShareOpen(false); }}
+        card={{
+          themeId: theme, envState, name: activeRoutine?.name, streak: stats.currentStreak,
+          best, season,
+        }}
+      />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => { SoundFX.close(); setSettingsOpen(false); }}
