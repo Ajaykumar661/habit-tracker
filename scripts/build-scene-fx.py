@@ -1,20 +1,30 @@
-"""Slice the supplied effect sprite sheets into shippable assets + placements.
+"""Slice a theme's effect sprite sheets into shippable assets + placements.
 
-Tooling only — it crops, keys and repacks the sprites you supplied and picks
+Tooling only -- it crops, keys and repacks the sprites you supplied and picks
 WHERE each one may appear; it never draws anything. Usage (from the repo root):
-    python scripts/build-scene-fx.py [--preview <dir>]
 
-Inputs
-  art-src/fx-glow-sheet.png   black-background sheet: flames, stars, firefly,
-                              shooting star, embers, motes, light shafts
-  art-src/fx-solid-sheet.png  magenta-background sheet: clouds, mist, bat,
-                              bird, butterflies, snoring Zs, breath puffs
-  public/assets/environment/*-scene.png   to locate the sun/moon per scene
+    python scripts/build-scene-fx.py [--theme medieval|neon] [--preview <dir>]
+
+Inputs (per theme, under art-src/<theme>/)
+  fx-glow-sheet.png   black-background sheet: flames, stars, firefly,
+                      shooting star, embers, motes, light shafts
+  fx-solid-sheet.png  chroma-keyed sheet (magenta for medieval, green for
+                      neon): clouds, mist, bat, bird, butterflies, Zs, puffs
+  fx-cat-sheet.png    the sleeping cat, six frames of one breath
+  public/assets/themes/<theme>/environment/*-scene.png   to find the sun/moon
 
 Outputs
-  public/assets/fx/<name>.png   uniform-cell strips (one row per animation)
-  public/assets/fx/static.png   atlas of the non-frame-animated sprites
-  src/data/sceneFx.json         strip/atlas metadata + per-scene placements
+  public/assets/themes/<theme>/fx/<name>.png   uniform-cell strips
+  public/assets/themes/<theme>/fx/static.png   atlas of the non-animated sprites
+  src/data/themes/<theme>/sceneFx.json         metadata + per-scene placements
+
+Every theme ships the same strip and sprite *names* (flame-night, star-blue,
+bat, mote-0...), so the app's animation layer needs no per-theme code: a neon
+tube is simply what "flame-night" looks like in Neon City.
+
+The medieval sheets are sliced at hand-measured coordinates, unchanged from
+when they were first cut. Newer themes are sliced automatically
+(scripts/sheet_slicer.py), with the expected sprite count per row checked.
 
 Backgrounds are handled differently on purpose: the glow sheet is treated as
 premultiplied-on-black (alpha = luminance, colour un-premultiplied), which is
@@ -31,11 +41,25 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-GLOW_SHEET = ROOT / 'art-src' / 'fx-glow-sheet.png'
-SOLID_SHEET = ROOT / 'art-src' / 'fx-solid-sheet.png'
-CAT_SHEET = ROOT / 'art-src' / 'fx-cat-sheet.png'
-OUT_DIR = ROOT / 'public/assets/fx'
-MANIFEST = ROOT / 'src/data/sceneFx.json'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+# Set per run by configure(); every path below belongs to one theme.
+THEME = GLOW_SHEET = SOLID_SHEET = CAT_SHEET = None
+OUT_DIR = ENV_DIR = MANIFEST = None
+URL = None
+
+
+def configure(theme):
+    global THEME, GLOW_SHEET, SOLID_SHEET, CAT_SHEET, OUT_DIR, ENV_DIR, MANIFEST, URL
+    THEME = theme
+    art = ROOT / 'art-src' / theme
+    GLOW_SHEET = art / 'fx-glow-sheet.png'
+    SOLID_SHEET = art / 'fx-solid-sheet.png'
+    CAT_SHEET = art / 'fx-cat-sheet.png'
+    OUT_DIR = ROOT / 'public/assets/themes' / theme / 'fx'
+    ENV_DIR = ROOT / 'public/assets/themes' / theme / 'environment'
+    MANIFEST = ROOT / 'src/data/themes' / theme / 'sceneFx.json'
+    URL = f'/assets/themes/{theme}/fx'
 
 SHRINK = 0.5          # sheets are ~2x the largest size anything is drawn at
 GLOW_FLOOR = 10       # luminance at/below this is background
@@ -160,7 +184,7 @@ def make_strip(frames, name, align='bottom'):
         strip[oy:oy + h, ox:ox + w] = f
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     Image.fromarray(strip).save(OUT_DIR / f'{name}.png')
-    return {'src': f'/assets/fx/{name}.png', 'frames': len(frames), 'cw': cw, 'ch': ch}
+    return {'src': f'{URL}/{name}.png', 'frames': len(frames), 'cw': cw, 'ch': ch}
 
 
 def pack_static(items, max_w=1024, pad=2):
@@ -180,7 +204,7 @@ def pack_static(items, max_w=1024, pad=2):
     used = max(r[0] + r[2] for r in rects.values())
     atlas = atlas[:, :used]
     Image.fromarray(atlas).save(OUT_DIR / 'static.png')
-    return {'src': '/assets/fx/static.png', 'atlas': [atlas.shape[1], atlas.shape[0]],
+    return {'src': f'{URL}/static.png', 'atlas': [atlas.shape[1], atlas.shape[0]],
             'rects': {n: list(map(int, r)) for n, r in rects.items()}}
 
 
@@ -341,14 +365,9 @@ class Placer:
         return None
 
 
-def main():
-    preview = None
-    if '--preview' in sys.argv:
-        preview = Path(sys.argv[sys.argv.index('--preview') + 1])
-
-    glow = glow_rgba(np.array(Image.open(GLOW_SHEET).convert('RGB')))
+def slice_medieval(manifest, glow):
+    """The medieval sheets, at their hand-measured coordinates."""
     solid = solid_rgba(np.array(Image.open(SOLID_SHEET).convert('RGB')))
-    manifest = {'strips': {}, 'static': None, 'placements': {}}
 
     # ---- strips -----------------------------------------------------------
     for name, cfg in GLOW_ROWS.items():
@@ -415,6 +434,206 @@ def main():
         statics[f'mote-{i}'] = shrink(tight(glow[my0:my1, c0:c1]))
     for i, (c0, c1) in enumerate(SHAFT_COLS):
         statics[f'shaft-{i}'] = shrink(tight(glow[my0:my1, c0:c1]))
+    return statics
+
+
+# =========================================================================
+# Neon City
+# =========================================================================
+def green_rgba(rgb):
+    """Green-keyed art -> hard alpha, despilled.
+
+    Neon art is keyed on green rather than magenta because the art itself is
+    full of hot pink. Edge pixels are despilled (green capped at the larger of
+    red and blue) instead of algebraically un-mixed, which overshoots on dark
+    edges and leaves a pink rim -- see scripts/key-color.py.
+    """
+    f = rgb.astype(np.float64)
+    r, g, b = f[..., 0], f[..., 1], f[..., 2]
+    m = g - np.maximum(r, b)
+    a = np.clip((150 - m) / 110.0, 0, 1)
+    out = np.zeros(rgb.shape[:2] + (4,), np.uint8)
+    keep = a > 0.02
+    col = f.copy()
+    col[..., 1] = np.minimum(col[..., 1], np.maximum(col[..., 0], col[..., 2]))
+    out[..., :3] = np.clip(col, 0, 255).astype(np.uint8)
+    out[..., 3] = np.where(keep, (a * 255).round(), 0).astype(np.uint8)
+    out[~keep] = 0
+    return out
+
+
+# What each row of the neon sheets holds, top to bottom, as asked for in the
+# generation prompt. The slicer checks these counts and stops if they differ.
+NEON_GLOW_ROWS = [12, 12, 12, 7, 5, 9, 9]   # pink tubes, cyan tubes, beacons,
+                                            # drones+halos, streaks, sparks,
+                                            # particles+beams
+NEON_SOLID_ROWS = [3, 3, 3, 6, 5, 8, 6]     # clouds x3 rows, steam+drones,
+                                            # pigeons, butterflies, Zs+puffs
+NEON_CAT_ROWS = [6]
+
+
+def slice_neon(manifest, glow):
+    """Neon sheets, found automatically and mapped onto the shared names."""
+    from sheet_slicer import layout
+
+    solid = green_rgba(np.array(Image.open(SOLID_SHEET).convert('RGB')))
+    cat = green_rgba(np.array(Image.open(CAT_SHEET).convert('RGB')))
+    G = layout(glow[..., 3], NEON_GLOW_ROWS, 'neon glow sheet')
+    S = layout(solid[..., 3], NEON_SOLID_ROWS, 'neon solid sheet')
+    C = layout(cat[..., 3], NEON_CAT_ROWS, 'neon cat sheet')
+
+    def cut(sheet, box):
+        x0, y0, x1, y1 = box
+        return tight(sheet[y0:y1, x0:x1])
+
+    st = manifest['strips']
+    # The tubes were drawn 12 to a row; the flicker cycle is 11 frames
+    # (fx-f11), so the twelfth is simply not used.
+    st['flame-night'] = make_strip([cut(glow, b) for b in G[0][:11]], 'flame-night', 'bottom')
+    st['flame-dusk'] = make_strip([cut(glow, b) for b in G[1][:11]], 'flame-dusk', 'bottom')
+    for i, tone in enumerate(('warm', 'blue', 'pink')):          # red, cyan, violet beacons
+        st[f'star-{tone}'] = make_strip([cut(glow, b) for b in G[2][i * 4:(i + 1) * 4]],
+                                        f'star-{tone}', 'center')
+    st['firefly'] = make_strip([cut(glow, b) for b in G[3][:4]], 'firefly', 'center')   # hover drone
+    st['shoot'] = make_strip([cut(glow, b) for b in G[4]], 'shoot', 'center')           # flying car
+    for i in range(3):                                            # amber, cyan, pink sparks
+        st[f'ember-{i}'] = make_strip([cut(glow, b) for b in G[5][i * 3:(i + 1) * 3]],
+                                      f'ember-{i}', 'center')
+    st['bat'] = make_strip([cut(solid, b) for b in S[3][2:6]], 'bat', 'center')         # patrol drone
+    st['bird'] = make_strip([cut(solid, b) for b in S[4]], 'bird', 'center')            # pigeon
+    st['butterfly-orange'] = make_strip([cut(solid, b) for b in S[5][:4]], 'butterfly-orange', 'center')
+    st['butterfly-blue'] = make_strip([cut(solid, b) for b in S[5][4:8]], 'butterfly-blue', 'center')
+
+    # One shared window per frame, centred on each frame's own box, so the
+    # bracket stays nailed to the wall and only the breath moves.
+    boxes = C[0]
+    w = max(b[2] - b[0] for b in boxes)
+    y0 = min(b[1] for b in boxes)
+    y1 = max(b[3] for b in boxes)
+    frames = []
+    for b in boxes:
+        cx = (b[0] + b[2]) // 2
+        frames.append(cat[y0:y1, max(0, cx - w // 2):cx - w // 2 + w])
+    st['cat'] = make_strip(frames, 'cat', 'bottom')
+
+    statics = {}
+    for row, name in ((0, 'cloud-night'), (1, 'cloud-dusk'), (2, 'cloud-day')):
+        for i, b in enumerate(S[row]):
+            statics[f'{name}-{i}'] = shrink(cut(solid, b))
+    for i, b in enumerate(S[3][:2]):
+        statics[f'mist-{i}'] = shrink(cut(solid, b))              # vent steam (not placed)
+    for i, b in enumerate(S[6][:3]):
+        statics[f'zzz-{i}'] = shrink(cut(solid, b))
+    for i, b in enumerate(S[6][3:6]):
+        statics[f'puff-{i}'] = shrink(cut(solid, b))
+    for i, b in enumerate(G[3][4:7]):
+        statics[f'fglow-{i}'] = shrink(cut(glow, b))              # sign halo
+    for i, b in enumerate(G[6][:6]):
+        statics[f'mote-{i}'] = shrink(cut(glow, b))               # neon particle
+    for i, b in enumerate(G[6][6:9]):
+        statics[f'shaft-{i}'] = shrink(cut(glow, b))              # searchlight (not placed)
+    return statics
+
+
+# Measured off the neon night scenes; the four times of day share geometry to
+# within 1px, so these hold for all of them. The wall boxes are the keyed
+# openings with the same 4px bleed the medieval frames use.
+NEON_FRAMES = {
+    'landscape': {
+        'scene': 'night-scene.png',
+        'size': (1672, 941),
+        'wall': (465, 308, 1206, 645),
+        # the band of open sky above the skyline, clear of the top bar and of
+        # the two side panels (left x<255, right x>1418 on a desktop screen)
+        'sky_hi': (262, 78, 1236, 162),
+        'sky_lo': (262, 78, 1236, 162),
+        'sun_r': 36,
+        # skyline above the frame, and the two gaps either side of it
+        'vista': [(470, 150, 1200, 226), (262, 170, 392, 560), (1296, 170, 1410, 560)],
+        'air': [(262, 570, 392, 700), (1296, 570, 1410, 700)],
+        'shafts': [],
+        # neon strips down the frame's two pillars (x, bottom-y, width)
+        'lanterns': [(432, 560, 54), (1250, 560, 54)],
+        # sparks shed from the coffee-cup and moon signs
+        'spark_from': [(118, 370, 10), (157, 505, 10)],
+        # halos pulsing over the pink signs and billboards (x, y, width)
+        'glow_spots': [(118, 262, 150), (1289, 139, 150), (320, 229, 60), (1586, 430, 130)],
+        'bird_zone': (470, 150, 1200, 226),
+        'bat_zone': (470, 150, 1200, 226),
+        'cat': (431, 400),
+        # Asleep on a bracket on the frame's left pillar, beside the wall and
+        # above the neon strip. The top of the frame looked the obvious spot
+        # but a browser window is shorter than the screen, the room crops at
+        # the top, and the top bar covered her (82% at 1280x720). The frame
+        # is the only band clear of both side panels at every window size.
+        'cat_sprite': (431, 440, 66),
+        'scale': 1.0,
+    },
+    'portrait': {
+        'scene': 'mobile-night-scene.png',
+        'size': (941, 1672),
+        'wall': (175, 572, 766, 1057),
+        'sky_hi': (170, 40, 770, 250),
+        'sky_lo': (170, 40, 770, 250),
+        'sun_r': 30,
+        'vista': [(170, 250, 770, 440)],
+        # a phone's cover-scaled crop keeps roughly x 83-858 of this frame
+        'air': [(90, 590, 170, 1000), (770, 590, 850, 900)],
+        'shafts': [],
+        'lanterns': [],          # the frame's pillars are too narrow for tubes
+        'spark_from': [],        # every sign here is cropped away on a phone
+        'glow_spots': [(247, 315, 80), (661, 379, 80)],
+        'bird_zone': (170, 250, 770, 440),
+        'bat_zone': (170, 250, 770, 440),
+        'cat': (800, 1300),
+        # on the big air-conditioner, right of the (narrowed) quote plaque
+        'cat_sprite': (800, 1400, 104),
+        'scale': 1.45,
+    },
+}
+
+NEON_ENV_FX = {
+    'dawn': {'flame': None, 'cloud': 'cloud-dusk', 'clouds': 2, 'birds': 2,
+             'stars': 5, 'motes': 3, 'fglow': 1},
+    'day': {'flame': None, 'cloud': 'cloud-day', 'clouds': 3, 'birds': 3,
+            'butterflies': 2, 'motes': 4},
+    'dusk': {'flame': 'flame-dusk', 'cloud': 'cloud-dusk', 'clouds': 3, 'bats': 2,
+             'stars': 6, 'fglow': 3, 'embers': 3, 'shoot': 1, 'motes': 4, 'butterflies': 1},
+    'night': {'flame': 'flame-night', 'cloud': 'cloud-night', 'clouds': 2, 'stars': 16,
+              'fireflies': 3, 'fglow': 4, 'bats': 2, 'shoot': 1, 'embers': 4, 'motes': 6,
+              'butterflies': 2},
+}
+
+NEON_SCENES = {
+    'landscape': ['dawn', 'day', 'dusk', 'night'],
+    'portrait': ['dawn', 'day', 'dusk', 'night'],
+}
+
+
+THEMES = {
+    'medieval': {'slice': slice_medieval, 'frames': FRAMES, 'env_fx': ENV_FX,
+                 'scenes': SCENES, 'motes': 3},
+    'neon': {'slice': slice_neon, 'frames': NEON_FRAMES, 'env_fx': NEON_ENV_FX,
+             'scenes': NEON_SCENES, 'motes': 6, 'ember_dir': -1},
+}
+
+
+def main():
+    preview = None
+    if '--preview' in sys.argv:
+        preview = Path(sys.argv[sys.argv.index('--preview') + 1])
+
+    theme = sys.argv[sys.argv.index('--theme') + 1] if '--theme' in sys.argv else 'medieval'
+    if theme not in THEMES:
+        raise SystemExit(f'unknown theme {theme!r}; known: {", ".join(THEMES)}')
+    configure(theme)
+    T = THEMES[theme]
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+
+    glow = glow_rgba(np.array(Image.open(GLOW_SHEET).convert('RGB')))
+    manifest = {'strips': {}, 'static': None, 'placements': {}}
+    statics = T['slice'](manifest, glow)
     manifest['static'] = pack_static(statics)
 
     print('strips:', ', '.join(f"{k}({v['frames']}@{v['cw']}x{v['ch']})"
@@ -422,17 +641,19 @@ def main():
     print('static atlas:', manifest['static']['atlas'], len(statics), 'sprites')
 
     # ---- placements -------------------------------------------------------
-    for frame, envs in SCENES.items():
-        geo = FRAMES[frame]
+    for frame, envs in T['scenes'].items():
+        geo = T['frames'][frame]
         S = geo['scale']
         W, H = geo['size']
         for env in envs:
             img_name = geo['scene'].replace('night', env) if env != 'night' else geo['scene']
-            img = np.array(Image.open(ROOT / 'public/assets/environment' / img_name).convert('RGB'))
-            rng = random.Random(f'tally-wall-fx-{frame}-{env}')
-            recipe = ENV_FX[env]
+            img = np.array(Image.open(ENV_DIR / img_name).convert('RGB'))
+            # Medieval keeps its original seeds, so its placements never move.
+            seed = f'tally-wall-fx-{frame}-{env}' if THEME == 'medieval' else f'tally-wall-fx-{THEME}-{frame}-{env}'
+            rng = random.Random(seed)
+            recipe = T['env_fx'][env]
             keep = [geo['wall']]
-            keep.append(celestial_keepout(img, geo['sky_hi'], round(30 * S)))
+            keep.append(celestial_keepout(img, geo['sky_hi'], round(geo.get('sun_r', 30) * S)))
             p = Placer(rng, keep)
             sky = sky_mask(img, geo['sky_hi'])
             skyz = geo['sky_hi']
@@ -467,14 +688,25 @@ def main():
                 for s in (p.put(geo['vista'], sized(20), sized(20)) for _ in range(recipe.get('fireflies', 0)))
                 if s]
 
-            out['fglow'] = [
-                {'s': f'fglow-{rng.randrange(3)}', 'x': s[0], 'y': s[1], 'w': sized(rng.uniform(6, 10)),
-                 'blink': round(rng.uniform(2.6, 5.5), 2), 'delay': round(-rng.uniform(0, 5), 2)}
-                for s in (p.put(geo['vista'], sized(12), sized(12)) for _ in range(recipe.get('fglow', 0)))
-                if s]
+            if geo.get('glow_spots'):
+                # A halo pulsing over a painted sign, so the sign itself
+                # reads as a faulty, buzzing neon tube.
+                # Capped and screen-blended: at full strength the halo's hot
+                # core sits on the sign like a pink orb instead of a glow.
+                out['fglow'] = [
+                    {'s': f'fglow-{rng.randrange(3)}', 'x': gx, 'y': gy, 'w': gw,
+                     'blink': round(rng.uniform(2.6, 5.5), 2), 'delay': round(-rng.uniform(0, 5), 2),
+                     'op': 0.42, 'blend': 'screen'}
+                    for gx, gy, gw in geo['glow_spots'][:recipe.get('fglow', 0)]]
+            else:
+                out['fglow'] = [
+                    {'s': f'fglow-{rng.randrange(3)}', 'x': s[0], 'y': s[1], 'w': sized(rng.uniform(6, 10)),
+                     'blink': round(rng.uniform(2.6, 5.5), 2), 'delay': round(-rng.uniform(0, 5), 2)}
+                    for s in (p.put(geo['vista'], sized(12), sized(12)) for _ in range(recipe.get('fglow', 0)))
+                    if s]
 
             out['motes'] = [
-                {'s': f'mote-{rng.randrange(3)}', 'x': s[0], 'y': s[1], 'w': sized(rng.uniform(5, 9)),
+                {'s': f'mote-{rng.randrange(T["motes"])}', 'x': s[0], 'y': s[1], 'w': sized(rng.uniform(5, 9)),
                  'dur': round(rng.uniform(16, 27), 1), 'path': rng.randrange(3),
                  'delay': round(-rng.uniform(0, 20), 1)}
                 for s in (p.put(geo['air'], sized(14), sized(14)) for _ in range(recipe.get('motes', 0)))
@@ -516,8 +748,16 @@ def main():
                                   'flip': rng.random() < 0.5})
                 return items
 
-            out['birds'] = travellers(recipe.get('birds', 0), 'bird', 15, geo['sky_lo'], (17, 29), sky, skyz)
-            out['bats'] = travellers(recipe.get('bats', 0), 'bat', 14, geo['sky_hi'], (13, 22), sky, skyz)
+            # Medieval flyers keep to open sky; a frame may instead send them
+            # along a band in front of the buildings (drones, city pigeons).
+            if geo.get('bird_zone'):
+                out['birds'] = travellers(recipe.get('birds', 0), 'bird', 15, geo['bird_zone'], (17, 29))
+            else:
+                out['birds'] = travellers(recipe.get('birds', 0), 'bird', 15, geo['sky_lo'], (17, 29), sky, skyz)
+            if geo.get('bat_zone'):
+                out['bats'] = travellers(recipe.get('bats', 0), 'bat', 14, geo['bat_zone'], (13, 22))
+            else:
+                out['bats'] = travellers(recipe.get('bats', 0), 'bat', 14, geo['sky_hi'], (13, 22), sky, skyz)
             out['butterflies'] = []
             for _ in range(recipe.get('butterflies', 0)):
                 out['butterflies'] += travellers(1, f'butterfly-{rng.choice(["orange", "blue"])}',
@@ -535,18 +775,21 @@ def main():
                  'dur': round(rng.uniform(9, 15), 1), 'delay': round(-rng.uniform(0, 9), 1)}
                 for i, z in ((i, geo['shafts'][0]) for i in range(recipe.get('shafts', 0) if geo['shafts'] else 0))]
 
-            # embers rise out of the lit lanterns
+            # Embers rise out of the lit lanterns. A theme can instead shed
+            # them from named spots and send them down (ember_dir -1): sparks
+            # dropping from a faulty sign.
             out['embers'] = []
-            if recipe.get('embers') and recipe.get('flame'):
+            sources = geo.get('spark_from') or geo['lanterns']
+            if recipe.get('embers') and recipe.get('flame') and sources:
                 for i in range(recipe['embers']):
-                    lx, ly, lw = geo['lanterns'][i % len(geo['lanterns'])]
+                    lx, ly, lw = sources[i % len(sources)]
                     out['embers'].append({
                         'k': f'ember-{rng.randrange(3)}',
                         'x': round(lx + rng.uniform(-lw * 0.3, lw * 0.3), 1),
                         'y': round(ly - lw * 0.45, 1), 'w': sized(rng.uniform(7, 12)),
                         'dur': round(rng.uniform(3.4, 6.0), 2),
                         'delay': round(-rng.uniform(0, 6), 2),
-                        'rise': round(rng.uniform(34, 62) * S, 1)})
+                        'rise': round(T.get('ember_dir', 1) * rng.uniform(34, 62) * S, 1)})
 
             out['shoot'] = []
             for _ in range(recipe.get('shoot', 0)):

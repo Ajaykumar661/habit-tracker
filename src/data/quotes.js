@@ -97,7 +97,7 @@ export const QUOTES = {
 
 // Exact-day flavor text — checked before anything else when the current
 // streak matches one of these keys.
-const DAY_EXACT = {
+export const DAY_EXACT = {
   0: ['Your wall awaits its first mark.'],
   1: ['The first stone has been laid.'],
   7: ['One week. The villagers are impressed.'],
@@ -112,7 +112,12 @@ function randomFrom(pool) {
 }
 
 // ctx: { envState, currentStreak, missedYesterday, isNewRecord, justMilestone, excludeText }
-export function pickQuote(ctx = {}) {
+/** The medieval pools. A theme passes its own set with the same keys. */
+export const MEDIEVAL_QUOTES = { pools: QUOTES, exact: DAY_EXACT };
+
+export function pickQuote(ctx = {}, set = MEDIEVAL_QUOTES) {
+  const QUOTES = set.pools;
+  const DAY_EXACT = set.exact;
   const { envState = 'day', currentStreak = 0, missedYesterday, isNewRecord, justMilestone, excludeText } = ctx;
 
   let pool;

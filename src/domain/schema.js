@@ -15,6 +15,10 @@ export const STORAGE_KEY = 'tally-wall-state';
 export const HABIT_TYPES = ['boolean', 'count', 'duration', 'numeric'];
 export const DIFFICULTIES = ['easy', 'normal', 'hard'];
 
+/** The worlds the app can be drawn in. src/data/themes describes each one. */
+export const THEME_IDS = ['medieval', 'neon'];
+export const DEFAULT_THEME = 'medieval';
+
 export const DEFAULT_SETTINGS = {
   // Hours after midnight that still belong to the previous day. 0 = calendar
   // midnight. Kept here so Phase 22's cutoff has one home from the start.
@@ -22,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   // Has the guide been read? Stored rather than derived, because "have you
   // seen this" is not a fact the completion record could ever answer.
   seenGuide: false,
+  theme: DEFAULT_THEME,
 };
 
 export function makeId() {
@@ -192,6 +197,9 @@ export function normalizeState(state) {
       // hand or written by an older build must not decide which day a
       // completion lands on.
       dayCutoffHour: clampCutoff(state.settings?.dayCutoffHour ?? DEFAULT_SETTINGS.dayCutoffHour),
+      // A theme that no longer exists (or never did) falls back rather than
+      // leaving the app with nothing to draw.
+      theme: THEME_IDS.includes(state.settings?.theme) ? state.settings.theme : DEFAULT_THEME,
     },
   };
 }

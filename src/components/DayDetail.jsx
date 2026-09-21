@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import ModalOverlay from './ModalOverlay';
 import { getDayDetail, dayNumber } from '../domain/chronicle';
 import { formatDateLabel } from '../lib/dates';
+import { useVoice } from '../hooks/useVoice';
 
 // One day of the chronicle, opened from the calendar.
 //
@@ -33,6 +34,7 @@ function QuestLine({ entry, state, onToggle, canToggle }) {
 export default function DayDetail({
   open, date, habits, completions, notes, today, onClose, onToggleHabit, onSaveNote,
 }) {
+  const v = useVoice();
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -52,10 +54,10 @@ export default function DayDetail({
 
   return (
     <ModalOverlay open={open} onClose={close}>
-      <div className="modal-title">{n ? `DAY ${n}` : 'THE CHRONICLE'}</div>
+      <div className="modal-title">{n ? `DAY ${n}` : v.day.chronicle}</div>
       <p className="day-date">{formatDateLabel(date)}</p>
 
-      {detail.perfect && <p className="day-perfect">A PERFECT DAY</p>}
+      {detail.perfect && <p className="day-perfect">{v.day.perfect}</p>}
 
       <div className="day-body">
         {detail.completed.length > 0 && (
@@ -82,7 +84,7 @@ export default function DayDetail({
 
         {detail.pending.length > 0 && (
           <>
-            <div className="day-heading">OUTSTANDING</div>
+            <div className="day-heading">{v.day.pending}</div>
             <ul className="day-list">
               {detail.pending.map((e) => (
                 <QuestLine key={e.habit.id} entry={e} state="pending" onToggle={onToggleHabit} canToggle={!detail.isFuture} />
@@ -104,12 +106,12 @@ export default function DayDetail({
 
         {!detail.completed.length && !detail.missed.length
           && !detail.pending.length && !detail.notScheduled.length && (
-          <p className="day-empty">NOTHING WAS TRACKED ON THIS DAY.</p>
+          <p className="day-empty">{v.day.nothing}</p>
         )}
 
         <div className="day-xp">XP EARNED <span>{detail.xp > 0 ? `+${detail.xp}` : '—'}</span></div>
 
-        <label className="field-label" htmlFor="dayNote">TODAY&rsquo;S CHRONICLE</label>
+        <label className="field-label" htmlFor="dayNote">{v.day.note}</label>
         <textarea
           id="dayNote"
           className="pixel-input day-note"

@@ -4,6 +4,7 @@ import {
   weeklyReport, reportVerdict, findPatterns, weekdayBreakdown, weeksTracked,
 } from '../domain/analytics';
 import { formatDateLabel } from '../lib/dates';
+import { useVoice } from '../hooks/useVoice';
 
 // The herald's weekly account of the keep.
 //
@@ -27,12 +28,13 @@ function Bar({ row, best }) {
 }
 
 export default function KingdomReport({ habits, completions, today, defaultOpen = false }) {
+  const v = useVoice();
   const { report, patterns, weekdays, weeks } = useMemo(() => ({
     report: weeklyReport(habits, completions, today),
-    patterns: findPatterns(habits, completions, today),
+    patterns: findPatterns(habits, completions, today, v.report.words),
     weekdays: weekdayBreakdown(habits, completions, today),
     weeks: weeksTracked(habits, today),
-  }), [habits, completions, today]);
+  }), [habits, completions, today, v]);
 
   const bestRate = Math.max(0, ...weekdays.filter((d) => d.enough).map((d) => d.rate));
   const pct = Math.round(report.rate * 100);
@@ -40,32 +42,32 @@ export default function KingdomReport({ habits, completions, today, defaultOpen 
   return (
     <Tray
       area="report"
-      label="KINGDOM REPORT"
+      label={v.report.title}
       count={report.enough ? `${pct}%` : '—'}
       defaultOpen={defaultOpen}
     >
       <div className="report-body">
-        <p className="report-verdict">{reportVerdict(report)}</p>
+        <p className="report-verdict">{reportVerdict(report, v.report.words)}</p>
         <p className="report-range">
           {formatDateLabel(report.from)} &rarr; {formatDateLabel(report.to)}
         </p>
 
         <dl className="stats-list report-figures">
           <div className="stat-row">
-            <dt>KEPT</dt>
+            <dt>{v.report.kept}</dt>
             <dd>{report.done} / {report.due}</dd>
           </div>
           <div className="stat-row">
-            <dt>PERFECT DAYS</dt>
+            <dt>{v.report.perfect}</dt>
             <dd>{report.perfectDays}</dd>
           </div>
           <div className="stat-row">
-            <dt>XP EARNED</dt>
+            <dt>{v.report.xp}</dt>
             <dd>{report.xp > 0 ? `+${report.xp}` : '—'}</dd>
           </div>
           {report.delta !== null && (
             <div className="stat-row">
-              <dt>AGAINST LAST WEEK</dt>
+              <dt>{v.report.versus}</dt>
               <dd className={report.delta >= 0 ? 'delta-up' : 'delta-down'}>
                 {report.delta >= 0 ? '+' : ''}{Math.round(report.delta * 100)}%
               </dd>
@@ -91,8 +93,8 @@ export default function KingdomReport({ habits, completions, today, defaultOpen 
         ) : (
           <p className="report-waiting">
             {weeks < 1
-              ? 'THE HERALD NEEDS A FULL WEEK BEFORE SPEAKING.'
-              : 'NO CLEAR PATTERN YET. KEEP THE RECORD AND IT WILL SHOW.'}
+              ? v.report.needWeek
+              : v.report.noPattern}
           </p>
         )}
       </div>

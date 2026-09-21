@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadOrInitState, saveState } from '../lib/storage';
-import { createHabit, createCompletion, DEFAULT_SETTINGS } from '../domain/schema';
+import { createHabit, createCompletion, DEFAULT_SETTINGS, THEME_IDS } from '../domain/schema';
 import { computeStats } from '../domain/streaks';
 import { isComplete, valueOf, stepFor, targetFor } from '../domain/completion';
 import { computeProgression } from '../domain/xp';
@@ -291,6 +291,8 @@ export function useTallyWallState() {
    * UI, because it decides which day every future completion lands on.
    */
   function setSetting(key, value) {
+    // A theme the app doesn't ship would leave nothing to draw.
+    if (key === 'theme' && !THEME_IDS.includes(value)) return;
     setState((s) => ({
       ...s,
       settings: {

@@ -13,6 +13,9 @@ import Achievements from './components/Achievements';
 import KingdomReport from './components/KingdomReport';
 import RallyStrip from './components/RallyStrip';
 import { getRecovery } from './domain/recovery';
+import { musicFor } from './data/themes';
+import { voiceFor } from './data/voice';
+import { VoiceContext } from './hooks/useVoice';
 import Tooltip from './components/Tooltip';
 import ConfirmModal from './components/ConfirmModal';
 import AddRoutineModal from './components/AddRoutineModal';
@@ -69,7 +72,10 @@ export default function App() {
   const [muted, setMuted] = useState(SoundFX.isMuted());
   const [freshDate, setFreshDate] = useState(null);
   const [shieldNotice, setShieldNotice] = useState(null);
-  const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }));
+  // The active world's words: labels, ranks, quotes. Everything below the
+  // provider reads them through useVoice().
+  const voice = voiceFor(settings?.theme);
+  const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }, voice.quotes));
 
   const markBtnRef = useRef(null);
   const achievementTimeoutRef = useRef(null);
@@ -129,14 +135,22 @@ export default function App() {
       currentStreak: stats.currentStreak,
       missedYesterday: stats.currentStreak === 0 && stats.totalCompleted > 0,
       excludeText: prev,
-    }));
+    }, voice.quotes));
+    // A new world gets a line in its own voice straight away.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envState, stats.currentStreak]);
+  }, [envState, stats.currentStreak, voice]);
 
   // Background music follows the time of day. It can only actually start
   // from a user gesture (every browser blocks audio before that), so the
   // first interaction arms it and whatever is `wanted` begins then.
-  useEffect(() => { Music.playFor(envState); }, [envState]);
+  const theme = settings?.theme;
+  useEffect(() => { Music.playFor(musicFor(envState, theme)); }, [envState, theme]);
+
+  // The interface skin keys off <html data-theme>, so it reaches modals,
+  // tooltips and the log below the room as well as the room itself.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme || 'medieval';
+  }, [theme]);
 
   useEffect(() => {
     // Not `once`: a browser may refuse the first gesture, and giving up
@@ -202,7 +216,7 @@ export default function App() {
   }, [achievement, confirm, groupDates, addRoutineOpen, settingsOpen, openDay, drawer, showStreakLost]);
 
   function handleRerollQuote() {
-    setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }));
+    setQuote((prev) => pickQuote({ envState, currentStreak: stats.currentStreak, excludeText: prev }, voice.quotes));
   }
 
   function showTooltip(e, text) { setTooltip({ text, x: e.clientX, y: e.clientY }); }
@@ -273,7 +287,7 @@ export default function App() {
         currentStreak: newStats.currentStreak,
         isNewRecord,
         justMilestone: !!milestone,
-      }));
+      }, voice.quotes));
     }
 
     if (milestone) {
@@ -311,8 +325,8 @@ export default function App() {
   function handleUndoToday() {
     SoundFX.click();
     setConfirm({
-      title: 'UNDO TALLY',
-      body: 'Remove today’s tally mark from the wall?',
+      title: voice.confirm.undoTitle,
+      body: voice.confirm.undoBody,
       onYes: () => { removeCompletion(today); SoundFX.undo(); },
     });
   }
@@ -359,10 +373,10 @@ export default function App() {
   function handleDeleteRoutine(routine) {
     SoundFX.click();
     setConfirm({
-      title: 'RETIRE QUEST',
+      title: voice.confirm.retireTitle,
       // No longer a destructive act, and the wording says so: the tallies
       // stay, and settings can bring the quest back.
-      body: `Retire "${routine.name}"? Its tallies are kept, and you can restore it from settings.`,
+      body: voice.confirm.retireBody(routine.name),
       onYes: () => { deleteRoutine(routine.id); SoundFX.undo(); },
     });
   }
@@ -381,7 +395,7 @@ export default function App() {
   function handlePurgeRoutine(routine) {
     setConfirm({
       title: 'DELETE FOREVER',
-      body: `Erase "${routine.name}" and every tally it holds? This cannot be undone.`,
+      body: voice.confirm.purgeBody(routine.name),
       onYes: () => { purgeRoutine(routine.id); SoundFX.undo(); },
     });
   }
@@ -420,10 +434,12 @@ export default function App() {
   }
 
   return (
+    <VoiceContext.Provider value={voice}>
     <div className="app" data-env={envState}>
       {/* GAME VIEW — fixed, full-viewport room with the HUD around it */}
       <GameView
         envState={envState}
+        theme={theme}
         streak={stats.currentStreak}
         shake={appControls}
         drawer={drawer}
@@ -477,12 +493,12 @@ export default function App() {
               <DayNumber stats={stats} />
               {shieldNotice && (
                 <p className="shield-notice" role="status">
-                  A SHIELD PROTECTED THE STREAK
+                  {voice.notice.shield}
                 </p>
               )}
               {atRisk && (
                 <p className="streak-risk" role="status">
-                  {stats.currentStreak}-DAY STREAK ENDS AT MIDNIGHT
+                  {voice.notice.risk(stats.currentStreak)}
                 </p>
               )}
               <RallyStrip recovery={recovery} />
@@ -497,7 +513,7 @@ export default function App() {
               />
             </div>
             <QuotePlaque quote={quote} onReroll={handleRerollQuote} />
-            <button type="button" className="scroll-cue" onClick={scrollToLog}>CELL LOG v</button>
+            <button type="button" className="scroll-cue" onClick={scrollToLog}>{voice.log.cue}</button>
           </>
         )}
       />
@@ -577,5 +593,6 @@ export default function App() {
       <ParticleLayer particles={particles} onDone={removeParticle} />
       <DevEnvSwitcher envState={envState} />
     </div>
+    </VoiceContext.Provider>
   );
 }

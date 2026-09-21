@@ -132,9 +132,13 @@ function createMusic() {
       if (wanted) cross(wanted, 0.8);
     },
 
-    /** The world moved to a new time of day. */
-    playFor(env) {
-      wanted = `/assets/audio/${env}.mp3`;
+    /**
+     * The world changed -- a new time of day, or a new theme. Takes the
+     * track's URL (see musicFor in data/themes) and crossfades to it, so a
+     * theme switch sounds like the rest of the app's transitions.
+     */
+    playFor(src) {
+      wanted = src;
       if (!prefs.on || !armed) return;
       resume();
       cross(wanted);

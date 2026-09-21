@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
+import { useVoice } from '../hooks/useVoice';
 
 export default function BarLog({ stats }) {
+  const v = useVoice();
   const activeDates = stats.currentSegment ? stats.currentSegment.dates : [];
 
   if (activeDates.length === 0) {
-    return <p className="bar-log-empty">NO TALLIES IN CURRENT SENTENCE YET.</p>;
+    return <p className="bar-log-empty">{v.log.emptyRun}</p>;
   }
 
   const recent = [...activeDates].reverse().slice(0, 12);

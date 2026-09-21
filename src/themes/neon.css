@@ -1,0 +1,251 @@
+/* ============================================================
+   NEON CITY -- the interface skin
+   Everything here is scoped to [data-theme="neon"] on <html>, which App
+   sets from the theme setting. The medieval look is the base stylesheets
+   (index.css, environment.css) untouched; this file only ever overrides,
+   so switching back to the keep can never be broken by it.
+
+   Two layers:
+     1. The shared colour tokens are re-pointed. Anything that already used
+        them (buttons, trays, badges, calendar, modals) turns neon for free.
+     2. The surfaces that hard-code medieval colours -- wood grain edges,
+        parchment, bronze, brass -- are re-drawn as dark glass with lit
+        edges: cyan for structure, pink for emphasis.
+   ============================================================ */
+
+:root[data-theme="neon"] {
+  --n-cyan: #3ce8ff;
+  --n-cyan-soft: rgba(60, 232, 255, 0.55);
+  --n-cyan-faint: rgba(60, 232, 255, 0.18);
+  --n-pink: #ff4fc8;
+  --n-pink-soft: rgba(255, 79, 200, 0.6);
+  --n-pink-faint: rgba(255, 79, 200, 0.16);
+  --n-violet: #8a5cff;
+  --n-glass: rgba(9, 7, 24, 0.84);
+  --n-glass-deep: rgba(5, 4, 15, 0.92);
+  --n-text: #e4e1ff;
+  --n-text-dim: #8e8ab8;
+  --n-glow-cyan: 0 0 10px rgba(60, 232, 255, 0.35);
+  --n-glow-pink: 0 0 12px rgba(255, 79, 200, 0.35);
+
+  /* the shared tokens */
+  --bg: #07060f;
+  --bg-deep: #04030a;
+  --panel: #0c0a1b;
+  --panel-alt: #120f27;
+  --wall: #0a0917;
+  --cream: var(--n-text);
+  --cream-dim: var(--n-text-dim);
+  --amber: var(--n-cyan);
+  --amber-dim: #0f6f85;
+  --green: #45ffb0;
+  --green-dim: #135b43;
+  --red: #ff4f9a;
+  --red-dim: #7a1c4b;
+  --border-dark: #030210;
+
+  --chalk: var(--n-text);
+  --gold-text: var(--n-pink);
+  --parchment: #bfe9ff;
+  --parchment-ink: #0a0918;
+  --bronze: var(--n-violet);
+  --hud-wood: var(--n-glass);
+  --hud-iron: var(--n-glass);
+  --hud-wood-edge: var(--n-pink-soft);
+  --hud-iron-edge: var(--n-cyan-soft);
+}
+
+/* ---- buttons: lit keys instead of carved wood ----------------------- */
+[data-theme="neon"] .pixel-btn {
+  box-shadow: inset -3px -4px 0 0 var(--green-dim), inset 3px 3px 0 0 #b9ffe0,
+    3px 3px 0 0 #000, 0 0 12px rgba(69, 255, 176, 0.3);
+}
+[data-theme="neon"] .pixel-btn-small,
+[data-theme="neon"] .pixel-btn-tiny {
+  background: var(--n-cyan);
+  box-shadow: inset -2px -3px 0 0 var(--amber-dim), inset 2px 2px 0 0 #c9f8ff,
+    2px 2px 0 0 #000, var(--n-glow-cyan);
+}
+[data-theme="neon"] .pixel-btn-danger {
+  background: var(--red);
+  box-shadow: inset -3px -4px 0 0 var(--red-dim), inset 3px 3px 0 0 #ffc0e6,
+    3px 3px 0 0 #000, var(--n-glow-pink);
+}
+[data-theme="neon"] .pixel-btn.danger { background: transparent; border: 2px solid var(--n-pink); color: var(--n-pink); }
+
+/* ---- panels and modals ---------------------------------------------- */
+[data-theme="neon"] .pixel-panel {
+  box-shadow: 0 0 0 2px var(--n-cyan), 0 0 0 4px #000, 6px 6px 0 0 #000,
+    0 0 22px rgba(60, 232, 255, 0.25);
+}
+[data-theme="neon"] .modal-overlay { background: rgba(4, 3, 14, 0.8); }
+[data-theme="neon"] .modal-title { color: var(--n-pink); text-shadow: 0 0 8px rgba(255, 79, 200, 0.55); }
+
+[data-theme="neon"] .hud-left {
+  box-shadow: 0 0 0 2px rgba(3, 2, 12, 0.7), 0 0 16px rgba(255, 79, 200, 0.22), 4px 6px 0 rgba(0, 0, 0, 0.35);
+}
+[data-theme="neon"] .hud-right {
+  box-shadow: 0 0 0 2px rgba(3, 2, 12, 0.7), 0 0 16px rgba(60, 232, 255, 0.2), 4px 6px 0 rgba(0, 0, 0, 0.35);
+}
+[data-theme="neon"] .hud-panel .panel-title {
+  color: var(--n-pink);
+  border-bottom-color: var(--n-cyan-faint);
+  text-shadow: 0 0 6px rgba(255, 79, 200, 0.5);
+}
+[data-theme="neon"] .hud-right .panel-title { color: var(--n-cyan); text-shadow: 0 0 6px rgba(60, 232, 255, 0.45); }
+[data-theme="neon"] .tray-count { color: var(--n-text-dim); }
+
+/* ledger rows */
+[data-theme="neon"] .hud-right .stats-list dt { color: var(--n-text-dim); }
+[data-theme="neon"] .hud-right .stats-list dd { color: var(--n-cyan); text-shadow: 0 0 6px rgba(60, 232, 255, 0.35); }
+
+/* ---- the quest (mission) board --------------------------------------- */
+[data-theme="neon"] .quest-row {
+  background: rgba(60, 232, 255, 0.04);
+  border-color: rgba(60, 232, 255, 0.2);
+}
+[data-theme="neon"] .quest-row.active {
+  border-color: var(--n-pink);
+  background: var(--n-pink-faint);
+  box-shadow: 0 0 10px rgba(255, 79, 200, 0.25);
+}
+[data-theme="neon"] .quest-check { border-color: var(--n-cyan-soft); }
+[data-theme="neon"] .quest-check:hover { border-color: var(--n-cyan); }
+[data-theme="neon"] .quest-row.done .quest-check-fill { box-shadow: 0 0 6px rgba(69, 255, 176, 0.6); }
+[data-theme="neon"] .quest-summary.complete { color: var(--green); text-shadow: 0 0 8px rgba(69, 255, 176, 0.5); }
+
+/* ---- rank plate ------------------------------------------------------- */
+[data-theme="neon"] .level-plaque {
+  background: rgba(138, 92, 255, 0.1);
+  border-color: var(--n-violet);
+  box-shadow: 0 0 12px rgba(138, 92, 255, 0.25), inset 0 0 0 1px rgba(60, 232, 255, 0.08);
+}
+[data-theme="neon"] .level-title { color: var(--n-pink); text-shadow: 0 0 8px rgba(255, 79, 200, 0.6); }
+[data-theme="neon"] .level-bar { background: #0a0918; }
+[data-theme="neon"] .level-bar-fill {
+  background: linear-gradient(90deg, var(--n-cyan) 0%, var(--n-violet) 55%, var(--n-pink) 100%);
+  box-shadow: 0 0 8px rgba(60, 232, 255, 0.5);
+}
+
+/* ---- top bar and tab bar ---------------------------------------------- */
+[data-theme="neon"] .hud-top .topbar {
+  background: rgba(5, 4, 16, 0.8);
+  border-bottom: 1px solid var(--n-cyan-soft);
+  box-shadow: 0 1px 12px rgba(60, 232, 255, 0.18);
+}
+[data-theme="neon"] .topbar-title { color: var(--n-text); text-shadow: 0 0 8px rgba(60, 232, 255, 0.45); }
+[data-theme="neon"] .brand-bracket { color: var(--n-pink); }
+[data-theme="neon"] .hud-tabbar { box-shadow: 0 -2px 14px rgba(255, 79, 200, 0.2); }
+[data-theme="neon"] .hud-tab.active { color: var(--n-cyan); }
+[data-theme="neon"] .hud-tab.active svg { filter: drop-shadow(0 0 5px rgba(60, 232, 255, 0.7)); }
+
+/* ---- the action plate under the wall --------------------------------- */
+[data-theme="neon"] .hud-action {
+  box-shadow: 0 0 0 2px rgba(3, 2, 12, 0.7), 0 0 18px rgba(255, 79, 200, 0.25), 4px 6px 0 rgba(0, 0, 0, 0.35);
+}
+[data-theme="neon"] .hud-action .day-counter { text-shadow: 0 0 10px rgba(255, 79, 200, 0.7), 2px 2px 0 #000; }
+[data-theme="neon"] .hud-action .rally { border-color: var(--n-cyan-soft); background: rgba(5, 4, 15, 0.6); }
+[data-theme="neon"] .hud-action .rally.won { border-color: rgba(69, 255, 176, 0.8); }
+[data-theme="neon"] .hud-action .rally-line { color: var(--n-text); }
+
+/* ---- the name on the steel plate: a neon sign, not a wooden board ----- */
+[data-theme="neon"] .scene-routine-name {
+  color: var(--n-pink);
+  background: rgba(6, 4, 18, 0.9);
+  border: 2px solid var(--n-cyan-soft);
+  text-shadow: 0 0 4px #ff9ae2, 0 0 10px rgba(255, 79, 200, 0.9), 0 0 18px rgba(255, 79, 200, 0.5);
+  box-shadow: 0 0 0 2px rgba(3, 2, 12, 0.7), 0 0 14px rgba(60, 232, 255, 0.35);
+}
+
+/* ---- the quote: a lit display instead of parchment ------------------ */
+[data-theme="neon"] .hud-bottom .quote-plaque {
+  background: var(--n-glass-deep);
+  border: 2px solid var(--n-cyan-soft);
+  box-shadow: 0 0 0 2px #000, 0 0 16px rgba(60, 232, 255, 0.25), 4px 5px 0 rgba(0, 0, 0, 0.45);
+}
+[data-theme="neon"] .hud-bottom .quote-plaque-text { color: #bfe9ff; text-shadow: 0 0 6px rgba(60, 232, 255, 0.4); }
+[data-theme="neon"] .quote-plaque-text { color: #bfe9ff; }
+[data-theme="neon"] .scroll-cue { color: var(--n-cyan); text-shadow: 0 0 6px rgba(60, 232, 255, 0.6); }
+
+/* ---- below the room: the data log ------------------------------------ */
+[data-theme="neon"] .data-view {
+  background: #07060f;
+  border-top: 2px solid var(--n-cyan-soft);
+  box-shadow: 0 -8px 24px rgba(60, 232, 255, 0.12);
+}
+[data-theme="neon"] .cal-cell.done { box-shadow: inset 0 0 0 1px rgba(69, 255, 176, 0.4), 0 0 6px rgba(69, 255, 176, 0.25); }
+[data-theme="neon"] .cal-cell.today { outline-color: var(--n-pink); }
+[data-theme="neon"] .bar-row .bar-fill { filter: hue-rotate(0deg) drop-shadow(0 0 3px rgba(69, 255, 176, 0.5)); }
+
+/* ---- achievements ------------------------------------------------------ */
+[data-theme="neon"] .achievement-badge.unlocked {
+  border-color: var(--n-cyan);
+  box-shadow: 2px 2px 0 0 #000, 0 0 10px rgba(60, 232, 255, 0.3);
+}
+[data-theme="neon"] .achievement-badge.unlocked .achievement-title { color: var(--n-cyan); }
+[data-theme="neon"] .achievement-popup-label { color: var(--n-pink); }
+[data-theme="neon"] .achievement-popup-title { color: var(--n-cyan); text-shadow: 0 0 10px rgba(60, 232, 255, 0.6); }
+
+/* ---- small text on the room itself ------------------------------------ */
+[data-theme="neon"] .shield-notice { color: var(--n-cyan); }
+[data-theme="neon"] .streak-risk { color: var(--n-pink); }
+[data-theme="neon"] .tooltip { background: #0b0a1d; color: var(--n-text); border-color: var(--n-cyan); box-shadow: var(--n-glow-cyan); }
+
+/* ---- choices, inputs and dividers ------------------------------------ */
+[data-theme="neon"] .choice-btn {
+  color: var(--n-text);
+  background: rgba(60, 232, 255, 0.04);
+  border-color: rgba(60, 232, 255, 0.28);
+}
+[data-theme="neon"] .choice-btn:hover { border-color: var(--n-cyan); color: var(--n-cyan); }
+[data-theme="neon"] .choice-btn.active {
+  background: var(--n-pink-faint);
+  border-color: var(--n-pink);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 79, 200, 0.35);
+}
+[data-theme="neon"] .weekday-btn { border-color: rgba(60, 232, 255, 0.28); }
+[data-theme="neon"] .weekday-btn.active { border-color: var(--n-cyan); box-shadow: var(--n-glow-cyan); }
+[data-theme="neon"] .pixel-input:focus { outline-color: var(--n-pink); }
+[data-theme="neon"] .settings-section,
+[data-theme="neon"] .streak-history,
+[data-theme="neon"] .quest-summary,
+[data-theme="neon"] .day-xp { border-top-color: var(--n-cyan-faint); }
+[data-theme="neon"] .settings-label { color: var(--n-pink); }
+
+/* ---- text that was warm parchment grey ------------------------------- */
+[data-theme="neon"] .quest-name-text,
+[data-theme="neon"] .streak-range,
+[data-theme="neon"] .day-line-name,
+[data-theme="neon"] .hud-right .pattern-text,
+[data-theme="neon"] .hud-left .routine-item { color: var(--n-text); }
+
+/* ---- run history, day detail, the older routine list ------------------ */
+[data-theme="neon"] .streak-row { background: rgba(60, 232, 255, 0.03); border-color: rgba(60, 232, 255, 0.2); }
+[data-theme="neon"] .streak-row.live { border-color: var(--n-pink); background: var(--n-pink-faint); }
+[data-theme="neon"] .day-line-check { border-color: var(--n-cyan-soft); }
+[data-theme="neon"] .hud-left .routine-item { background: rgba(60, 232, 255, 0.04); border-color: rgba(60, 232, 255, 0.25); }
+[data-theme="neon"] .hud-left .routine-item.active {
+  background: var(--n-pink-faint); border-color: var(--n-pink); color: #fff;
+}
+
+/* ---- the weekly chart ------------------------------------------------ */
+[data-theme="neon"] .hud-right .week-chart { border-color: var(--n-cyan-faint); }
+[data-theme="neon"] .hud-right .week-bar-track { background: rgba(60, 232, 255, 0.05); border-color: rgba(60, 232, 255, 0.22); }
+[data-theme="neon"] .hud-right .week-bar-fill { background: rgba(60, 232, 255, 0.55); }
+[data-theme="neon"] .hud-right .week-bar.best .week-bar-fill { background: var(--n-pink); box-shadow: 0 0 6px rgba(255, 79, 200, 0.6); }
+
+/* ---- connection lost: the quote as a terminal line, not parchment ----- */
+[data-theme="neon"] .streak-lost-line {
+  color: #bfe9ff;
+  background: var(--n-glass-deep);
+  border-color: var(--n-cyan-soft);
+  box-shadow: 0 0 12px rgba(60, 232, 255, 0.2);
+}
+[data-theme="neon"] .streak-lost-title { color: var(--n-pink); }
+
+/* ---- the phone's floating gear and + buttons match the desktop keys --- */
+[data-theme="neon"] .topbar-mobile .pixel-icon-btn {
+  background: var(--n-cyan);
+  box-shadow: inset -3px -4px 0 0 var(--amber-dim), inset 3px 3px 0 0 #c9f8ff, 3px 3px 0 0 #000, var(--n-glow-cyan);
+}

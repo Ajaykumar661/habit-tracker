@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { migrateState, isLegacyV1, migrateV1toV2 } from './migrate';
-import { validateState, normalizeState, SCHEMA_VERSION, createHabit } from './schema';
+import {
+  validateState, normalizeState, SCHEMA_VERSION, createHabit, DEFAULT_THEME, THEME_IDS,
+} from './schema';
 import { flattenCompletions, nestCompletions, parseBackup, buildBackup } from '../lib/backup';
 
 // A realistic v1 blob: exactly what shipped before the schema was versioned.
@@ -194,5 +196,27 @@ describe('settings on the way in', () => {
   it('leaves other settings alone', () => {
     const out = normalizeState({ ...base, settings: { dayCutoffHour: 2, somethingElse: 'kept' } });
     expect(out.settings.somethingElse).toBe('kept');
+  });
+});
+
+describe('the theme setting', () => {
+  const base = { habits: [], completions: {} };
+
+  it('defaults to the medieval keep', () => {
+    expect(normalizeState(base).settings.theme).toBe(DEFAULT_THEME);
+    expect(DEFAULT_THEME).toBe('medieval');
+  });
+
+  it('keeps a theme that exists', () => {
+    expect(normalizeState({ ...base, settings: { theme: 'neon' } }).settings.theme).toBe('neon');
+  });
+
+  it('falls back when the stored theme is unknown', () => {
+    expect(normalizeState({ ...base, settings: { theme: 'space' } }).settings.theme).toBe(DEFAULT_THEME);
+    expect(normalizeState({ ...base, settings: { theme: 42 } }).settings.theme).toBe(DEFAULT_THEME);
+  });
+
+  it('lists every theme the app ships', () => {
+    expect(THEME_IDS).toEqual(['medieval', 'neon']);
   });
 });

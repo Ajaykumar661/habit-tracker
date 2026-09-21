@@ -7,18 +7,32 @@ import path from 'node:path';
 
 const PUB = path.resolve(import.meta.dirname, '..', 'public');
 
+// Every theme must ship the same set: room art for each time of day it
+// claims, a wall texture, the shared effect sprite names, and its music.
+const FX = ['flame-night', 'flame-dusk', 'star-warm', 'star-blue', 'star-pink', 'firefly', 'shoot',
+  'ember-0', 'ember-1', 'ember-2', 'bat', 'bird', 'butterfly-orange', 'butterfly-blue', 'cat', 'static'];
+const THEMES = {
+  medieval: { landscape: ['day', 'dusk', 'night'] },   // no landscape dawn yet
+  neon: { landscape: ['dawn', 'day', 'dusk', 'night'] },
+};
+const TIMES = ['dawn', 'day', 'dusk', 'night'];
+
 const required = [
-  ...['day', 'dusk', 'night'].map((st) => ({ file: `/assets/environment/${st}-scene.png`, alpha: true })),
-  ...['dawn', 'day', 'dusk', 'night'].map((st) => ({ file: `/assets/environment/mobile-${st}-scene.png`, alpha: true })),
-  { file: '/assets/environment/wall-surface.png' },
+  ...Object.entries(THEMES).flatMap(([id, t]) => {
+    const dir = `/assets/themes/${id}`;
+    return [
+      ...t.landscape.map((st) => ({ file: `${dir}/environment/${st}-scene.png`, alpha: true })),
+      ...TIMES.map((st) => ({ file: `${dir}/environment/mobile-${st}-scene.png`, alpha: true })),
+      { file: `${dir}/environment/wall-surface.png` },
+      // effect sprites -- regenerate with scripts/build-scene-fx.py --theme <id>
+      ...FX.map((n) => ({ file: `${dir}/fx/${n}.png`, alpha: true })),
+      ...TIMES.map((st) => ({ file: `${dir}/audio/${st}.mp3` })),
+    ];
+  }),
   { file: '/fonts/press-start-2p.ttf' },
-  // effect sprites — regenerate with scripts/build-scene-fx.py
-  ...['flame-night', 'flame-dusk', 'star-warm', 'star-blue', 'star-pink', 'firefly', 'shoot',
-    'ember-0', 'ember-1', 'ember-2', 'bat', 'bird', 'butterfly-orange', 'butterfly-blue', 'static']
-    .map((n) => ({ file: `/assets/fx/${n}.png`, alpha: true })),
 ];
 const planned = [
-  { file: '/assets/environment/dawn-scene.png', alpha: true },
+  { file: '/assets/themes/medieval/environment/dawn-scene.png', alpha: true },
   ...['board-wood', 'board-ledger', 'sign-hanging', 'parchment', 'button-wood', 'button-wood-hover',
     'button-wood-pressed', 'badge-plaque', 'badge-plaque-locked'].map((n) => ({ file: `/assets/ui/${n}.png`, alpha: true })),
 ];

@@ -24,6 +24,27 @@ const rate = (done, due) => (due > 0 ? done / due : 0);
 const pct = (x) => Math.round(x * 100);
 
 /**
+ * How findings and verdicts are worded. This is the medieval voice; a theme
+ * passes its own. Every entry observes the record, none judges the person.
+ */
+export const REPORT_WORDS = {
+  bestDay: (day, p) => `${day} IS YOUR STRONGEST DAY \u2014 ${p}% KEPT.`,
+  worstDay: (day, p) => `${day} ASKS THE MOST OF YOU \u2014 ${p}% KEPT.`,
+  weekendBetter: (we, wk) => `WEEKENDS SUIT YOU \u2014 ${we}% AGAINST ${wk}% IN THE WEEK.`,
+  weekBetter: (wk, we) => `THE WEEK HOLDS FIRMER THAN THE WEEKEND \u2014 ${wk}% AGAINST ${we}%.`,
+  gaining: (now, before) => `YOU ARE GAINING \u2014 ${now}% THIS WEEK, UP FROM ${before}%.`,
+  harder: (now, before) => `THIS WEEK RAN HARDER \u2014 ${now}%, DOWN FROM ${before}%.`,
+  steadiest: (name, p) => `${name} IS YOUR STEADIEST OATH \u2014 ${p}% KEPT.`,
+  hardest: (name) => `${name} HAS BEEN THE HARDEST TO HOLD.`,
+  notWritten: 'THE WEEK IS NOT YET WRITTEN.',
+  flawless: 'A FLAWLESS WEEK. THE KEEP STANDS UNTOUCHED.',
+  strong: 'A STRONG WEEK. THE WALLS HELD.',
+  held: 'THE WEEK WAS HELD, IF NOT EASILY.',
+  hard: 'A HARD WEEK. WHAT WAS KEPT STILL COUNTS.',
+  quiet: 'A QUIET WEEK. THE WALL WAITS, PATIENT AS EVER.',
+};
+
+/**
  * How each weekday has gone, across every habit.
  * @returns {Array<{weekday:number, name:string, due:number, done:number, rate:number, enough:boolean}>}
  */
@@ -111,7 +132,7 @@ export function habitStandings(habits, completions, today = habitToday()) {
  * UI can show what it is based on, and nothing under-evidenced is returned.
  * @returns {Array<{id:string, text:string, sample:number, tone:'good'|'soft'|'plain'}>}
  */
-export function findPatterns(habits, completions, today = habitToday()) {
+export function findPatterns(habits, completions, today = habitToday(), words = REPORT_WORDS) {
   const out = [];
   const active = (habits || []).filter(Boolean);
   if (!active.length) return out;
@@ -123,13 +144,13 @@ export function findPatterns(habits, completions, today = habitToday()) {
     if (best.rate - worst.rate >= NOTABLE_GAP) {
       out.push({
         id: 'best-day',
-        text: `${best.name.toUpperCase()} IS YOUR STRONGEST DAY — ${pct(best.rate)}% KEPT.`,
+        text: words.bestDay(best.name.toUpperCase(), pct(best.rate)),
         sample: best.due,
         tone: 'good',
       });
       out.push({
         id: 'worst-day',
-        text: `${worst.name.toUpperCase()} ASKS THE MOST OF YOU — ${pct(worst.rate)}% KEPT.`,
+        text: words.worstDay(worst.name.toUpperCase(), pct(worst.rate)),
         sample: worst.due,
         tone: 'soft',
       });
@@ -149,8 +170,8 @@ export function findPatterns(habits, completions, today = habitToday()) {
       out.push({
         id: 'weekend',
         text: weRate > wkRate
-          ? `WEEKENDS SUIT YOU — ${pct(weRate)}% AGAINST ${pct(wkRate)}% IN THE WEEK.`
-          : `THE WEEK HOLDS FIRMER THAN THE WEEKEND — ${pct(wkRate)}% AGAINST ${pct(weRate)}%.`,
+          ? words.weekendBetter(pct(weRate), pct(wkRate))
+          : words.weekBetter(pct(wkRate), pct(weRate)),
         sample: wkDue + weDue,
         tone: 'plain',
       });
@@ -162,8 +183,8 @@ export function findPatterns(habits, completions, today = habitToday()) {
     out.push({
       id: 'momentum',
       text: m.direction === 'up'
-        ? `YOU ARE GAINING — ${pct(m.recent)}% THIS WEEK, UP FROM ${pct(m.previous)}%.`
-        : `THIS WEEK RAN HARDER — ${pct(m.recent)}%, DOWN FROM ${pct(m.previous)}%.`,
+        ? words.gaining(pct(m.recent), pct(m.previous))
+        : words.harder(pct(m.recent), pct(m.previous)),
       sample: 14,
       tone: m.direction === 'up' ? 'good' : 'soft',
     });
@@ -176,13 +197,13 @@ export function findPatterns(habits, completions, today = habitToday()) {
     if (top.rate - low.rate >= NOTABLE_GAP) {
       out.push({
         id: 'steadiest',
-        text: `${top.habit.name} IS YOUR STEADIEST OATH — ${pct(top.rate)}% KEPT.`,
+        text: words.steadiest(top.habit.name, pct(top.rate)),
         sample: top.due,
         tone: 'good',
       });
       out.push({
         id: 'hardest',
-        text: `${low.habit.name} HAS BEEN THE HARDEST TO HOLD.`,
+        text: words.hardest(low.habit.name),
         sample: low.due,
         tone: 'soft',
       });
@@ -261,14 +282,14 @@ export function weeklyReport(habits, completions, end = habitToday()) {
 }
 
 /** A single line for the top of the report. Never scolding. */
-export function reportVerdict(report) {
-  if (!report.enough) return 'THE WEEK IS NOT YET WRITTEN.';
+export function reportVerdict(report, words = REPORT_WORDS) {
+  if (!report.enough) return words.notWritten;
   const p = pct(report.rate);
-  if (p === 100) return 'A FLAWLESS WEEK. THE KEEP STANDS UNTOUCHED.';
-  if (p >= 80) return 'A STRONG WEEK. THE WALLS HELD.';
-  if (p >= 50) return 'THE WEEK WAS HELD, IF NOT EASILY.';
-  if (p > 0) return 'A HARD WEEK. WHAT WAS KEPT STILL COUNTS.';
-  return 'A QUIET WEEK. THE WALL WAITS, PATIENT AS EVER.';
+  if (p === 100) return words.flawless;
+  if (p >= 80) return words.strong;
+  if (p >= 50) return words.held;
+  if (p > 0) return words.hard;
+  return words.quiet;
 }
 
 /** How many whole weeks of record exist — the report needs at least one. */

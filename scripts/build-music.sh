@@ -5,8 +5,13 @@
 #
 #   FFMPEG=/path/to/ffmpeg bash scripts/build-music.sh
 #
-# Sources live in art-src/audio-src/ (originals, not shipped); output goes to
-# public/assets/audio/. Provenance is in src/data/attributions.js.
+# Medieval theme only. Sources live in art-src/medieval/audio-src/ (originals,
+# not shipped); output goes to public/assets/themes/medieval/audio/. Provenance
+# is in src/data/attributions.js. (Neon City's music is composed, not
+# downloaded: see scripts/compose-neon-music.py.)
+#
+# No ffmpeg on PATH? `pip install imageio-ffmpeg` ships one:
+#   FFMPEG="$(python -c 'import imageio_ffmpeg as f; print(f.get_ffmpeg_exe())')"
 #
 # Two modes, because the sources differ:
 #
@@ -24,8 +29,8 @@ set -euo pipefail
 
 FF="${FFMPEG:-ffmpeg}"
 FP="${FFPROBE:-ffprobe}"
-SRC="art-src/audio-src"
-OUT="public/assets/audio"
+SRC="art-src/medieval/audio-src"
+OUT="public/assets/themes/medieval/audio"
 mkdir -p "$OUT"
 
 XF=6          # seconds of tail wrapped back over the head, in `wrap` mode

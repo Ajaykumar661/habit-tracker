@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { getStreakHistory, BREAK_REASONS, reasonLabel } from '../domain/history';
+import { getStreakHistory, BREAK_REASONS } from '../domain/history';
 import { formatDateLabel } from '../lib/dates';
+import { useVoice } from '../hooks/useVoice';
 
 // The runs that came before, as entries in a ledger.
 //
@@ -10,6 +11,7 @@ import { formatDateLabel } from '../lib/dates';
 // chronicle can hold context without turning into a form to fill in.
 
 function StreakRow({ streak, expanded, onToggle, onSetReason }) {
+  const v = useVoice();
   const reducedMotion = useReducedMotion();
   const id = `${streak.start}-${streak.end}`;
 
@@ -44,9 +46,9 @@ function StreakRow({ streak, expanded, onToggle, onSetReason }) {
 
             {!streak.live && (
               <>
-                <div className="streak-broken">BROKEN {formatDateLabel(streak.brokenOn)}</div>
+                <div className="streak-broken">{v.history.broken} {formatDateLabel(streak.brokenOn)}</div>
                 <div className="streak-reason-label">
-                  {streak.reason ? 'REASON' : 'WHAT HAPPENED?'}
+                  {streak.reason ? v.history.reason : v.history.ask}
                 </div>
                 <div className="streak-reasons">
                   {BREAK_REASONS.map((r) => (
@@ -57,7 +59,7 @@ function StreakRow({ streak, expanded, onToggle, onSetReason }) {
                       onClick={() => onSetReason(streak.end, streak.reason === r.id ? null : r.id)}
                       aria-pressed={streak.reason === r.id}
                     >
-                      {r.label}
+                      {v.history.reasons[r.id]}
                     </button>
                   ))}
                 </div>
@@ -71,13 +73,14 @@ function StreakRow({ streak, expanded, onToggle, onSetReason }) {
 }
 
 export default function StreakHistory({ routine, today, onSetReason }) {
+  const v = useVoice();
   const [expanded, setExpanded] = useState(null);
   const history = getStreakHistory(routine, today);
 
   if (!history.length) {
     return (
       <div className="streak-history">
-        <h3 className="bar-log-title">STREAK HISTORY</h3>
+        <h3 className="bar-log-title">{v.history.title}</h3>
         <p className="bar-log-empty">NO RUNS RECORDED YET.</p>
       </div>
     );
@@ -85,7 +88,7 @@ export default function StreakHistory({ routine, today, onSetReason }) {
 
   return (
     <div className="streak-history">
-      <h3 className="bar-log-title">STREAK HISTORY</h3>
+      <h3 className="bar-log-title">{v.history.title}</h3>
       <ul className="streak-list">
         {history.map((s) => {
           const id = `${s.start}-${s.end}`;
@@ -102,8 +105,10 @@ export default function StreakHistory({ routine, today, onSetReason }) {
       </ul>
       {history.some((s) => s.reason) && (
         <p className="streak-reason-note">
-          {history.filter((s) => s.reason).length} RUN(S) HAVE A RECORDED REASON:
-          {' '}{[...new Set(history.filter((s) => s.reason).map((s) => reasonLabel(s.reason)))].join(', ')}
+          {v.history.summary(
+            history.filter((s) => s.reason).length,
+            [...new Set(history.filter((s) => s.reason).map((s) => v.history.reasons[s.reason]))].join(', '),
+          )}
         </p>
       )}
     </div>

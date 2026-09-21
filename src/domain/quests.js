@@ -53,8 +53,15 @@ export function buildQuestBoard(habits, completions, today = habitToday()) {
 }
 
 /** Short status line for the board's footer. */
-export function questSummary(board) {
-  if (!board.total) return 'NO QUESTS TODAY';
-  if (board.allComplete) return 'QUEST COMPLETE';
-  return `${board.doneCount} / ${board.total} COMPLETE`;
+/** The medieval wording; a theme passes its own. */
+export const QUEST_WORDS = {
+  none: 'NO QUESTS TODAY',
+  allDone: 'QUEST COMPLETE',
+  progress: (done, total) => `${done} / ${total} COMPLETE`,
+};
+
+export function questSummary(board, words = QUEST_WORDS) {
+  if (!board.total) return words.none;
+  if (board.allComplete) return words.allDone;
+  return words.progress(board.doneCount, board.total);
 }

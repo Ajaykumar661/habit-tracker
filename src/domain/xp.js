@@ -60,9 +60,10 @@ export const TITLES = [
   { level: 100, title: 'GRANDMASTER' },
 ];
 
-export function titleForLevel(level) {
-  let title = TITLES[0].title;
-  for (const t of TITLES) if (level >= t.level) title = t.title;
+/** The rank for a level. `titles` lets a theme name its own ranks. */
+export function titleForLevel(level, titles = TITLES) {
+  let title = titles[0].title;
+  for (const t of titles) if (level >= t.level) title = t.title;
   return title;
 }
 
