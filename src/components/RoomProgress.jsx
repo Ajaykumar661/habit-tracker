@@ -6,8 +6,9 @@ import { useVoice } from '../hooks/useVoice';
 // The room's objects as a row in the ledger: the ones earned in full, the
 // rest as dark silhouettes, and what comes next. It is what makes the
 // candle on the shelf read as a trophy rather than as furniture.
-function RoomProgress({ theme, best }) {
-  const words = useVoice().room;
+function RoomProgress({ theme, best, onShare }) {
+  const voice = useVoice();
+  const words = voice.room;
   const milestones = themeFor(theme).extras?.milestones || [];
   if (!milestones.length) return null;
 
@@ -38,6 +39,11 @@ function RoomProgress({ theme, best }) {
       <div className="room-progress-next">
         {next ? words.next(words.names[next.id] || next.id, next.day) : words.done}
       </div>
+      {onShare && (
+        <button type="button" className="pixel-btn pixel-btn-small room-share" onClick={onShare}>
+          {voice.share.button}
+        </button>
+      )}
     </div>
   );
 }

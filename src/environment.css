@@ -1692,3 +1692,18 @@
 [data-theme="neon"] .room-progress-row li { border-color: var(--n-cyan-faint); }
 [data-theme="neon"] .room-progress-row .got { border-color: var(--n-cyan-soft); box-shadow: 0 0 6px rgba(60, 232, 255, 0.25); }
 [data-theme="neon"] .room-progress-row .locked img { filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(60, 232, 255, 0.5)); }
+
+/* ---- share card (ShareCardModal.jsx) ---------------------------------- */
+.room-share { width: 100%; margin-top: 8px; }
+.share-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  margin: 4px 0 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--bronze);
+}
+.share-preview img { display: block; width: 100%; max-height: 58vh; max-height: 58dvh; object-fit: contain; }
+.share-drawing { font-size: 9px; color: var(--cream-dim); letter-spacing: 1px; }
+.share-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }

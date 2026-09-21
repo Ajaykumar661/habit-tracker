@@ -166,6 +166,21 @@ const medieval = {
     done: 'THE KEEP IS COMPLETE',
   },
 
+  share: {
+    button: 'SHARE MY WALL',
+    title: 'YOUR WALL, AS A PICTURE',
+    drawing: 'CARVING YOUR CARD...',
+    share: 'SHARE',
+    save: 'SAVE IMAGE',
+    shared: 'SENT FORTH',
+    saved: 'SAVED TO YOUR DOWNLOADS',
+    failed: 'THE CARD COULD NOT BE DRAWN',
+    day: 'DAY',
+    best: (n) => `BEST ${n}`,
+    objects: (n, t) => `${n}/${t} TROPHIES`,
+    footer: 'KEPT ON TALLY WALL',
+  },
+
   day: {
     chronicle: 'THE CHRONICLE',
     perfect: 'A PERFECT DAY',
@@ -390,6 +405,21 @@ const neon = {
     count: (n, total) => `${n} / ${total} UNLOCKED`,
     next: (name, d) => `NEXT: ${name} AT ${d} DAYS`,
     done: 'HIDEOUT FULLY LOADED',
+  },
+
+  share: {
+    button: 'SHARE MY WALL',
+    title: 'EXPORT YOUR WALL',
+    drawing: 'RENDERING...',
+    share: 'SHARE',
+    save: 'SAVE IMAGE',
+    shared: 'TRANSMITTED',
+    saved: 'SAVED TO YOUR DOWNLOADS',
+    failed: 'RENDER FAILED',
+    day: 'DAY',
+    best: (n) => `BEST ${n}`,
+    objects: (n, t) => `${n}/${t} UNLOCKED`,
+    footer: 'LOGGED ON TALLY WALL',
   },
 
   day: {

@@ -32,6 +32,7 @@ import DevEnvSwitcher from './components/DevEnvSwitcher';
 import GameView from './components/GameView';
 import LevelPlaque from './components/LevelPlaque';
 import RoomProgress from './components/RoomProgress';
+import ShareCardModal from './components/ShareCardModal';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { useReminders } from './hooks/useReminders';
@@ -67,6 +68,7 @@ export default function App() {
   const [addRoutineOpen, setAddRoutineOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [groupDates, setGroupDates] = useState(null);
   const [openDay, setOpenDay] = useState(null);
@@ -499,7 +501,7 @@ export default function App() {
         right={() => (
           <>
             <LevelPlaque progression={progression} />
-            <RoomProgress theme={theme} best={best} />
+            <RoomProgress theme={theme} best={best} onShare={() => { SoundFX.open(); setShareOpen(true); }} />
             <StatsPanel stats={stats} progression={progression} />
             <Achievements
               routine={activeRoutine}
@@ -583,6 +585,14 @@ export default function App() {
         today={today}
       />
       <GuideSheet open={guideOpen} onClose={closeGuide} />
+      <ShareCardModal
+        open={shareOpen}
+        onClose={() => { SoundFX.close(); setShareOpen(false); }}
+        card={{
+          themeId: theme, envState, name: activeRoutine?.name, streak: stats.currentStreak,
+          best, season,
+        }}
+      />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => { SoundFX.close(); setSettingsOpen(false); }}
