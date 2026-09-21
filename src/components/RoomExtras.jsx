@@ -151,10 +151,17 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
     };
   };
 
-  const items = earned;
+  // Every object has its slot on the shelf; the ones not yet earned stand
+  // there as silhouettes, so the shelf reads as a collection to complete.
+  const items = extras.milestones || [];
+  const held = new Set(earned.map((m) => m.id));
   const tellAbout = (m, s) => {
     SoundFX.click();
-    show({ title: words.names[m.id] || m.id, sub: words.earned(m.day), x: s.x, y: s.y - objectHeight(m, s) });
+    show({
+      title: words.names[m.id] || m.id,
+      sub: held.has(m.id) ? words.earned(m.day) : words.locked(m.day),
+      x: s.x, y: s.y - objectHeight(m, s),
+    });
   };
   const lookSprite = look ? extras.cat[look] : null;
   const away = !!cat && (petting || !!lookSprite);
@@ -166,11 +173,21 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
       data-petting={petting ? '' : undefined}
       aria-hidden={!cat}
     >
+      {(extras.shelves?.[orient] || []).map((pl) => (
+        <img key={pl.src} className="room-shelf" src={pl.src} alt="" draggable="false"
+          style={{
+            left: pct(pl.x, scene.width), top: pct(pl.y, scene.height),
+            width: pct(pl.w, scene.width), height: pct(pl.h, scene.height),
+          }} />
+      ))}
+
       {items.map((m) => {
         const s = m.spots?.[orient];
         if (!s) return null;
-        const f = m.flicker;
-        const cls = `room-obj${m.id === freshId ? ' room-new' : ''}`;
+        const got = held.has(m.id);
+        // a silhouette never flickers
+        const f = got ? m.flicker : null;
+        const cls = `room-obj${got ? '' : ' room-locked'}${m.id === freshId ? ' room-new' : ''}`;
         const tap = { onClick: () => tellAbout(m, s), role: 'button', 'aria-label': words.names[m.id] || m.id };
         return f ? (
           <span key={m.id} className={`${cls} room-flicker room-flicker-${m.id}`} {...tap}

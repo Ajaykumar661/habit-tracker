@@ -96,6 +96,31 @@ export const GUIDE_PAGES = [
     ],
   },
   {
+    id: 'room',
+    title: 'THE ROOM THAT GROWS',
+    icon: 'crown',
+    lead: 'The trophy shelf above the wall fills as your best run grows.',
+    points: [
+      'A new trophy is earned at 7, 14, 30, 60, 100 and 365 days. Dark shapes on the shelf are the ones still to come.',
+      'Trophies are kept for good: a broken streak never takes one back.',
+      'Tap any trophy to see what it is and what earned it. THE ROOM in the Records panel shows the whole set.',
+      'Tap the sleeping cat to wake her. At 30 days she gets a cushion, and at 100, a crown.',
+      'The room follows the seasons: petals, leaves or snow drift past, with something set out for the time of year.',
+    ],
+  },
+  {
+    id: 'extras',
+    title: 'REMINDERS AND SHARING',
+    icon: 'star',
+    lead: 'A few things that live outside the wall itself.',
+    points: [
+      'In the Android app, settings can send one reminder a day, at the hour you pick, only if a quest is still open.',
+      'It names what is left — 3 of 8 glasses, say — and stays quiet once your mark is made.',
+      'The Android app also has a home screen widget with your streak and today’s progress. Add it from settings.',
+      'SHARE MY WALL, under THE ROOM, turns your wall into a picture to send or post. Nothing leaves unless you share it.',
+    ],
+  },
+  {
     id: 'chronicle',
     title: 'THE CHRONICLE',
     icon: 'calendar',
@@ -115,7 +140,7 @@ export const GUIDE_PAGES = [
     points: [
       'No account, no server, no tracking. It works with no connection at all.',
       'That also means nobody else holds a copy — so use EXPORT in settings and keep the file somewhere safe.',
-      'The gear holds sound, music, backups, your choice of world — keep or neon city — and when your day turns over.',
+      'The gear holds sound, music, reminders, text size, backups, your world — keep or neon city — and when your day turns over.',
       'You can reopen this guide from settings whenever you like.',
     ],
   },

@@ -255,7 +255,10 @@ FRAMES = {
         # some phones; now she sleeps on the lintel ledge above the wall, in
         # front of the vista, where nothing on the interface ever sits.
         # (x, bottom-y, width) -- the slab sits on that baseline.
-        'cat_sprite': (655, 431, 86),
+        # drawn large: on a phone the room is shown at about half size, and at
+        # 86 she came out ~45px wide -- a smudge. The trophy shelf hangs in
+        # the arch above, so the lintel's right half is hers.
+        'cat_sprite': (626, 431, 150),
         'scale': 1.45,                        # sky window is bigger in this frame
     },
 }
@@ -597,7 +600,8 @@ NEON_FRAMES = {
         'cat': (690, 440),
         # On top of the steel name plate, by the railing: above the wall, so
         # the action panel and quote below it can never cover her.
-        'cat_sprite': (690, 480, 84),
+        # large, for the same reason as the keep's portrait cat
+        'cat_sprite': (682, 480, 136),
         'scale': 1.45,
     },
 }
