@@ -28,8 +28,8 @@ const FRESH_MS = 5200;    // a newly earned object's plaque stays a little longe
 // How each season's particles move: size range (room px), seconds to fall
 // the height of the room, how far they sway, and how much they turn.
 const DRIFT = {
-  spring: { size: [16, 26], fall: [11, 16], sway: [2, 5], spin: 220 },
-  autumn: { size: [18, 30], fall: [9, 14], sway: [3, 7], spin: 540 },
+  spring: { size: [16, 26], fall: [16, 22], sway: [2, 5], spin: 180 },
+  autumn: { size: [18, 30], fall: [20, 28], sway: [3, 6], spin: 260 },
   winter: { size: [12, 22], fall: [14, 22], sway: [1, 3], spin: 90 },
 };
 
