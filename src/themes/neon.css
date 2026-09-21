@@ -128,12 +128,12 @@
 }
 
 /* ---- top bar and tab bar ---------------------------------------------- */
-/* Desktop only. On a phone the gear and + float over the scene with no bar
-   behind them (as in the keep); a lit bar there hid the top of the view. */
-[data-theme="neon"] .hud-top .topbar:not(.topbar-mobile) {
-  background: rgba(5, 4, 16, 0.8);
-  border-bottom: 1px solid var(--n-cyan-soft);
-  box-shadow: 0 1px 12px rgba(60, 232, 255, 0.18);
+/* No bar in either layout (see environment.css); on desktop the title gets
+   a small lit plate of its own. */
+[data-theme="neon"] .hud-top .topbar:not(.topbar-mobile) .topbar-title {
+  background: rgba(5, 4, 16, 0.82);
+  border-color: var(--n-cyan-soft);
+  box-shadow: 0 0 10px rgba(60, 232, 255, 0.2), 2px 3px 0 rgba(0, 0, 0, 0.45);
 }
 [data-theme="neon"] .topbar-title { color: var(--n-text); text-shadow: 0 0 8px rgba(60, 232, 255, 0.45); }
 [data-theme="neon"] .brand-bracket { color: var(--n-pink); }

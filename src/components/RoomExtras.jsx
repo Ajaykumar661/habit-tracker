@@ -22,8 +22,9 @@ import { useVoice } from '../hooks/useVoice';
 
 const PET_MS = 2600;      // the whole wake-stretch-purr-settle, once
 const HEART_MS = 1500;
-const LABEL_MS = 3200;
-const FRESH_MS = 5200;    // a newly earned object's plaque stays a little longer
+const LABEL_MS = 5000;    // a plaque's whole life, its fade included
+const FRESH_MS = 5000;
+const FADE_MS = 600;
 
 // How each season's particles move: size range (room px), seconds to fall
 // the height of the room, how far they sway, and how much they turn.
@@ -66,7 +67,7 @@ function flurry(season, count) {
 function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, onSeen }) {
   const words = useVoice().room;
   const [petting, setPetting] = useState(false);
-  const [label, setLabel] = useState(null);   // { title, sub, x, y, fresh }
+  const [label, setLabel] = useState(null);   // { id, title, sub, x, y, fresh, leaving }
   const [freshId, setFreshId] = useState(null);
   const timer = useRef(null);
   const labelTimer = useRef(null);
@@ -75,11 +76,21 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
     clearTimeout(timer.current); clearTimeout(labelTimer.current); clearTimeout(freshTimer.current);
   }, []);
 
+  // Fade the plaque out, then remove it.
+  const hide = useCallback(() => {
+    clearTimeout(labelTimer.current);
+    setLabel((l) => (l ? { ...l, leaving: true } : l));
+    labelTimer.current = setTimeout(() => setLabel(null), FADE_MS);
+  }, []);
+
+  // Show a plaque for `ms` in all, fading out over its last moments. Tapping
+  // the same thing again while its plaque is up puts it away.
   const show = useCallback((next, ms = LABEL_MS) => {
     clearTimeout(labelTimer.current);
+    if (label && !label.leaving && label.id === next.id) { hide(); return; }
     setLabel(next);
-    labelTimer.current = setTimeout(() => setLabel(null), ms);
-  }, []);
+    labelTimer.current = setTimeout(hide, ms - FADE_MS);
+  }, [label, hide]);
 
   const pct = (v, of) => `${(v / of) * 100}%`;
   const orient = scene.orientation;
@@ -104,7 +115,7 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
     if (!fresh) return undefined;
     const s = fresh.spots[orient];
     setFreshId(fresh.id);
-    show({ title: words.fresh, sub: `${words.names[fresh.id] || fresh.id} · ${words.earned(fresh.day)}`,
+    show({ id: fresh.id, title: words.fresh, sub: `${words.names[fresh.id] || fresh.id} · ${words.earned(fresh.day)}`,
       x: s.x, y: s.y - objectHeight(fresh, s), fresh: true }, FRESH_MS);
     onSeen?.(heldDay);
     clearTimeout(freshTimer.current);
@@ -158,6 +169,7 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
   const tellAbout = (m, s) => {
     SoundFX.click();
     show({
+      id: m.id,
       title: words.names[m.id] || m.id,
       sub: held.has(m.id) ? words.earned(m.day) : words.locked(m.day),
       x: s.x, y: s.y - objectHeight(m, s),
@@ -210,7 +222,7 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
             role="button" aria-label={words.decos[season]}
             onClick={() => {
               SoundFX.click();
-              show({ title: words.decos[season], sub: words.season, x: s.x, y: s.y - (s.w * d.h) / d.w });
+              show({ id: `deco-${season}`, title: words.decos[season], sub: words.season, x: s.x, y: s.y - (s.w * d.h) / d.w });
             }}
             style={standing(s.x, s.y, s.w, d.w, d.h)} />
         ) : null;
@@ -277,7 +289,7 @@ function RoomExtras({ scene, extras, best, season, sparse = false, seenDay = 0, 
       })()}
 
       {label && (
-        <div className={`room-label${label.fresh ? ' fresh' : ''}`} role="status"
+        <div className={`room-label${label.fresh ? ' fresh' : ''}${label.leaving ? ' leaving' : ''}`} role="status"
           // centred on the object, but never past the edge of a cropped screen
           style={{
             left: `clamp(calc(50% - 50vw + 120px), ${pct(label.x, scene.width)}, calc(50% + 50vw - 120px))`,
