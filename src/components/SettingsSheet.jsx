@@ -37,9 +37,14 @@ export default function SettingsSheet({
     onClose();
   }
 
-  function handleExport() {
+  async function handleExport() {
     try {
-      const { routines, tallies } = exportBackup();
+      const { routines, tallies, cancelled } = await exportBackup();
+      if (cancelled) {
+        // Nothing was saved, so neither the note nor the backup date may say so.
+        setNote({ kind: 'err', text: 'EXPORT CANCELLED \u2014 NOTHING WAS SAVED' });
+        return;
+      }
       // Recorded so the app can say how long it has been since the last copy.
       onSetSetting('lastExportAt', new Date().toISOString());
       setNote({ kind: 'ok', text: v.settings.saved(tallies, routines) });

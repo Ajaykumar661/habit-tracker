@@ -47,6 +47,16 @@ android {
     }
 
     buildTypes {
+        // Android Studio installs debug builds as their own app. Signed with
+        // the machine's debug key and sharing the release package name, a
+        // debug install blocked the real APK with "package conflicts with an
+        // existing package" -- Android will not swap signing keys in place.
+        // With the suffix the two sit side by side ("Tally Wall (dev)", see
+        // src/debug/res) and never collide.
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

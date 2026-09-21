@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Debug builds only: overrides the launcher names from src/main so the
+     development copy is told apart from the installed release. -->
+<resources>
+    <string name="app_name">Tally Wall (dev)</string>
+    <string name="title_activity_main">Tally Wall (dev)</string>
+</resources>
