@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import ModalOverlay from './ModalOverlay';
 import { IconSpeaker } from './icons';
 import { exportBackup, parseBackup, restoreBackup } from '../lib/backup';
-import { MIN_CUTOFF_HOUR, MAX_CUTOFF_HOUR } from '../lib/dates';
+import { MIN_CUTOFF_HOUR, MAX_CUTOFF_HOUR, formatDateLabel } from '../lib/dates';
+import { backupStatus } from '../domain/upkeep';
 import { Music } from '../lib/music';
 import { SoundFX } from '../lib/sound';
 
@@ -16,6 +17,7 @@ const HOURS = Array.from(
 // found in the file before doing it.
 export default function SettingsSheet({
   open, onClose, muted, onToggleMute, settings, onSetSetting, onOpenGuide,
+  habits = [], archived = [], onRestore, onPurge,
 }) {
   const fileRef = useRef(null);
   const [note, setNote] = useState(null);       // { kind: 'ok' | 'err', text }
@@ -24,6 +26,7 @@ export default function SettingsSheet({
   const [musicVol, setMusicVol] = useState(() => Music.getVolume());
   const [sfxVol, setSfxVol] = useState(() => SoundFX.getVolume());
   const cutoff = settings?.dayCutoffHour ?? 0;
+  const backup = backupStatus(habits, settings);
 
   function close() {
     setNote(null);
@@ -34,6 +37,8 @@ export default function SettingsSheet({
   function handleExport() {
     try {
       const { routines, tallies } = exportBackup();
+      // Recorded so the app can say how long it has been since the last copy.
+      onSetSetting('lastExportAt', new Date().toISOString());
       setNote({ kind: 'ok', text: `SAVED ${tallies} TALLIES FROM ${routines} ROUTINE${routines === 1 ? '' : 'S'}` });
     } catch (e) {
       setNote({ kind: 'err', text: e.message.toUpperCase() });
@@ -154,6 +159,10 @@ export default function SettingsSheet({
           Everything stays on this device. Keep a copy somewhere safe so a lost
           phone doesn&rsquo;t take the streak with it.
         </p>
+        <p className={`settings-note-quiet${backup.overdue ? ' warn' : ''}`}>
+          {backup.label}
+          {backup.tracked > 0 && ` · ${backup.tracked} DAYS OF RECORD`}
+        </p>
         {pending ? (
           <>
             <p className="settings-help settings-warn">
@@ -173,6 +182,39 @@ export default function SettingsSheet({
         )}
         <input ref={fileRef} type="file" accept="application/json,.json" onChange={handleFile} hidden />
       </div>
+
+      {archived.length > 0 && (
+        <div className="settings-section">
+          <div className="settings-label">RETIRED QUESTS</div>
+          <p className="settings-help">
+            Their tallies are kept. Restore one to put it back on the board.
+          </p>
+          <ul className="archived-list">
+            {archived.map((r) => (
+              <li key={r.id} className="archived-row">
+                <span className="archived-name">
+                  {r.name}
+                  <span className="archived-meta">
+                    {r.completed.length} {r.completed.length === 1 ? 'TALLY' : 'TALLIES'}
+                    {r.archivedAt && ` · ${formatDateLabel(r.archivedAt.slice(0, 10))}`}
+                  </span>
+                </span>
+                <button type="button" className="pixel-btn pixel-btn-small" onClick={() => onRestore(r)}>
+                  RESTORE
+                </button>
+                <button
+                  type="button"
+                  className="pixel-btn pixel-btn-small danger"
+                  onClick={() => onPurge(r)}
+                  aria-label={`Delete ${r.name} forever`}
+                >
+                  DELETE
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {note && <p className={`settings-note${note.kind === 'err' ? ' err' : ''}`}>{note.text}</p>}
 

@@ -529,6 +529,16 @@ export default function App() {
         open={addRoutineOpen}
         onClose={() => { SoundFX.close(); setAddRoutineOpen(false); }}
         onCreate={handleCreateRoutine}
+        habits={habits}
+        today={today}
+      />
+      {/* The same form, prefilled, for changing a quest that already exists. */}
+      <AddRoutineModal
+        open={!!editingRoutine}
+        editing={editingRoutine}
+        onClose={() => { SoundFX.close(); setEditingRoutine(null); }}
+        onSave={handleSaveRoutine}
+        habits={habits}
         today={today}
       />
       <GuideSheet open={guideOpen} onClose={closeGuide} />
@@ -540,6 +550,10 @@ export default function App() {
         settings={settings}
         onSetSetting={setSetting}
         onOpenGuide={() => { SoundFX.open(); setSettingsOpen(false); setGuideOpen(true); }}
+        habits={habits}
+        archived={archived}
+        onRestore={(r) => { restoreRoutine(r.id); SoundFX.tally(); }}
+        onPurge={handlePurgeRoutine}
       />
       {showStreakLost && (
         <StreakLostModal

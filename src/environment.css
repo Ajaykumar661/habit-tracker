@@ -424,6 +424,11 @@
 .hud-top .topbar-title { font-size: 14px; letter-spacing: 3px; }
 .hud-top .topbar-actions { gap: 10px; }
 .hud-top .pixel-btn-tiny { font-size: 11px; padding: 9px 14px; }
+/* The gear carries both classes, and `.hud-top .pixel-btn-tiny` was winning
+   on specificity -- which sized the icon by the *text* scale, leaving an
+   11px glyph rattling around inside a 40px button. Icons size themselves
+   from font-size (1em), so the icon button needs its own scale back. */
+.hud-top .pixel-btn-tiny.pixel-icon-btn { font-size: 20px; padding: 0; }
 
 /* Mobile top bar: no bar/background at all — a lone icon button floating
    directly on the scenery, not a strip covering the sky (see TopBar.jsx) */
@@ -1156,6 +1161,12 @@
   .hud-action .pixel-btn-danger { font-size: 10px; padding: 10px 8px; }
   .hud-bottom .quote-plaque { padding: 10px 14px; }
   .hud-bottom .quote-plaque-text { font-size: 9px; }
+  /* The cat sleeps on a slab painted into the bottom-right of the room, and
+     the quote plaque was stretched to the action box's full width straight
+     over it -- on a phone with the browser's URL bar showing, it covered up
+     to 91% of her. The quote is decorative, so it gives up the corner
+     rather than the cat. The action buttons keep the full width. */
+  .hud-bottom .quote-plaque { align-self: flex-start; max-width: 74%; text-align: left; }
   .data-view {
     padding: 28px calc(12px + var(--safe-right)) calc(48px + var(--safe-bottom)) calc(12px + var(--safe-left));
   }

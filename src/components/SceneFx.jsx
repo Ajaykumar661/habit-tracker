@@ -36,8 +36,75 @@ function deviceBudget() {
   return cores <= 4 || mem <= 4 ? 0.55 : 1;
 }
 
+// A small deterministic PRNG. Seeded once per mount, so the scene differs
+// between visits but never reshuffles under the viewer mid-session.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// The placements are baked at build time, which fixes every drift, flicker
+// and wander to the same rhythm on every load -- open the app twice and the
+// clouds are in lockstep. This re-rolls the *motion* on each visit: how long
+// a thing takes, where in its cycle it starts, and which wander path it
+// follows.
+//
+// Positions are deliberately left alone. build-scene-fx.py chooses them
+// against a mask that guarantees nothing is placed over the tally wall, and
+// nudging x or y here would throw that guarantee away.
+//
+// The night scene is excluded: it is already tuned and the request was to
+// leave it exactly as it is.
+const PATHS = 3;
+
+/** Scenes whose motion is left exactly as authored. */
+export const isFixedScene = (key) => String(key || '').includes('night');
+
+/**
+ * The motion for a scene: re-rolled, unless the scene is one we leave alone.
+ * Exported so the rule can be tested without a browser.
+ */
+export function motionFor(key, place, seed) {
+  return isFixedScene(key) ? place : randomiseMotion(place, seed);
+}
+
+export function randomiseMotion(place, seed) {
+  const rnd = mulberry32(seed);
+  // +/- 25% on a duration is enough to break visible lockstep without
+  // turning a slow drift into a scurry.
+  const jitter = (v, spread = 0.25) => +(v * (1 - spread + rnd() * spread * 2)).toFixed(3);
+
+  const out = {};
+  for (const [layer, items] of Object.entries(place)) {
+    if (!Array.isArray(items)) { out[layer] = items; continue; }
+    out[layer] = items.map((it) => {
+      const next = { ...it };
+      if (typeof it.dur === 'number') next.dur = jitter(it.dur);
+      // A fresh negative offset starts each sprite somewhere new in its own
+      // cycle, which is what actually breaks up the marching-in-step look.
+      if (typeof it.delay === 'number') next.delay = -+(rnd() * next.dur).toFixed(2);
+      if (typeof it.blink === 'number') next.blink = jitter(it.blink, 0.35);
+      if (typeof it.path === 'number') next.path = Math.floor(rnd() * PATHS);
+      return next;
+    });
+  }
+  return out;
+}
+
 function SceneFx({ scene, streak = 0 }) {
-  const place = fx.placements[scene.fx.key];
+  const key = scene.fx.key;
+  const raw = fx.placements[key];
+  // Re-rolled per mount, and per scene, so moving from dawn to day gives a
+  // genuinely different arrangement of motion rather than the same one.
+  const place = useMemo(
+    () => motionFor(key, raw, (Math.random() * 2 ** 32) >>> 0),
+    [key, raw],
+  );
   const hidden = useIsHidden();
   const budget = useMemo(deviceBudget, []);
 
@@ -71,6 +138,13 @@ function SceneFx({ scene, streak = 0 }) {
       height: pct((w * ah) / aw, scene.height),
     };
   };
+  // Keeps a sprite's left edge inside the visible slice of a cropped canvas.
+  const onScreenLeft = (it, margin = 10) => {
+    const leftPct = pct(it.x - it.w / 2, scene.width);
+    const widthPct = pct(it.w, scene.width);
+    return `min(${leftPct}, calc(50% + 50vw - ${widthPct} - ${margin}px))`;
+  };
+
   // Sprites are centred on their spot; travellers are anchored at their start.
   const at = (x, y, w, h) => ({ left: pct(x - w / 2, scene.width), top: pct(y - h / 2, scene.height) });
   const spot = (it, aspect) => at(it.x, it.y, it.w, it.w * aspect);
@@ -83,6 +157,7 @@ function SceneFx({ scene, streak = 0 }) {
   return (
     <motion.div
       className={`fx-layer${hidden ? ' fx-paused' : ''}`}
+      data-scene={key}
       aria-hidden="true"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -170,6 +245,14 @@ function SceneFx({ scene, streak = 0 }) {
       {(place.cat || []).map((it, i) => (
         <span key={`cat${i}`} className="fx-cat fx-step-6"
           style={{ ...strip('cat', it.w), ...spot(it, stripAspect('cat')),
+            // She sleeps three quarters of the way across the room, and on a
+            // very tall phone the canvas is scaled to cover the height, so
+            // that much of the width is cropped away and her tail goes with
+            // it. The canvas is centred, so the viewport's right edge sits at
+            // `50% + 50vw` in canvas coordinates: never let her start further
+            // right than that leaves room for. On every ordinary screen the
+            // painted position wins and nothing moves.
+            left: onScreenLeft(it),
             animationDuration: `${it.dur}s` }} />
       ))}
 

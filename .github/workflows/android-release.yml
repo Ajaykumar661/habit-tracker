@@ -1,0 +1,251 @@
+name: Android Release
+
+# Only a version tag cuts a release. Ordinary pushes to main do nothing here,
+# so day-to-day development never publishes anything.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# The workflow needs to create a release and upload an asset to it. Nothing
+# else, so nothing else is granted.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+
+    env:
+      # The `secrets` context cannot be read from a step-level `if`, so the
+      # presence of a keystore is resolved once here into a plain string.
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------------
+      # Work out the version from the tag, once, for every later step.
+      #
+      #   tag  v1.2.3         -> version 1.2.3, stable release
+      #   tag  v1.2.3-beta.1  -> version 1.2.3-beta.1, marked as a prerelease
+      #
+      # versionName comes from the tag so the APK always reports the version
+      # it was cut from. versionCode is the workflow run number, which only
+      # ever goes up: deriving it from the semantic version would collide the
+      # moment two tags produced the same digits (1.2.3 and 1.2.30), and
+      # Android refuses to install an APK whose versionCode went backwards.
+      # ----------------------------------------------------------------------
+      - name: Resolve version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Tag '$TAG' has no version after the leading 'v'."
+            exit 1
+          fi
+          # A hyphen means a pre-release identifier (-beta.1, -rc.1).
+          if [[ "$VERSION" == *-* ]]; then PRERELEASE=true; else PRERELEASE=false; fi
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "prerelease=$PRERELEASE"
+            echo "apk_name=TallyWall-$TAG.apk"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $TAG (version $VERSION, prerelease=$PRERELEASE, versionCode=${GITHUB_RUN_NUMBER})"
+
+      # Fail before doing any work if this release already exists, rather than
+      # quietly replacing an APK people may already have downloaded.
+      - name: Refuse to overwrite an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release ${{ steps.version.outputs.tag }} already exists. Delete it first, or tag a new version."
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The unit tests are the cheapest possible guard against shipping a
+      # broken build to someone's phone.
+      - name: Run tests
+        run: npm test
+
+      - name: Build the web app
+        run: npm run build
+
+      # @capacitor/cli is a devDependency, so npm ci already installed it.
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      # AGP 8.13 requires JDK 17 or newer, and Gradle 8.14.3 cannot run on
+      # JDK 25 (it fails with "Unsupported class file major version 69").
+      # 21 is the LTS that satisfies both.
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      # ----------------------------------------------------------------------
+      # Signing.
+      #
+      # The keystore is held as a base64 secret and written to a file outside
+      # the repository checkout, so it can never be committed. If the secret
+      # is absent the build still runs and produces an unsigned APK, which is
+      # useful for a first trial run but cannot be installed on a phone --
+      # the summary at the end says so plainly.
+      #
+      # Nothing here echoes a secret. `base64 -d` reads from a file and writes
+      # to a file; the passwords are passed to Gradle through the environment,
+      # which GitHub masks in logs.
+      # ----------------------------------------------------------------------
+      - name: Decode the signing keystore
+        id: keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          KEYSTORE_PATH="${RUNNER_TEMP}/tallywall-release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          if [ ! -s "$KEYSTORE_PATH" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 did not decode to a usable keystore."
+            exit 1
+          fi
+          echo "path=$KEYSTORE_PATH" >> "$GITHUB_OUTPUT"
+          echo "Keystore decoded ($(stat -c%s "$KEYSTORE_PATH") bytes)."
+
+      - name: Build the release APK
+        working-directory: android
+        env:
+          # Empty when no keystore secret is set; build.gradle then leaves the
+          # APK unsigned rather than failing.
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease \
+            -PtallyVersionName="${{ steps.version.outputs.version }}" \
+            -PtallyVersionCode="${GITHUB_RUN_NUMBER}" \
+            --no-daemon --stacktrace
+
+      # Gradle names the file app-release.apk when signed and
+      # app-release-unsigned.apk when not. Locate whichever exists, and fail
+      # loudly if neither does rather than publishing an empty release.
+      - name: Locate and rename the APK
+        id: apk
+        run: |
+          RELEASE_DIR="android/app/build/outputs/apk/release"
+          SIGNED="$RELEASE_DIR/app-release.apk"
+          UNSIGNED="$RELEASE_DIR/app-release-unsigned.apk"
+
+          if [ -f "$SIGNED" ]; then
+            SRC="$SIGNED"; IS_SIGNED=true
+          elif [ -f "$UNSIGNED" ]; then
+            SRC="$UNSIGNED"; IS_SIGNED=false
+          else
+            echo "::error::No APK found in $RELEASE_DIR"
+            ls -laR "$RELEASE_DIR" || true
+            exit 1
+          fi
+
+          DEST="${RUNNER_TEMP}/${{ steps.version.outputs.apk_name }}"
+          cp "$SRC" "$DEST"
+          {
+            echo "path=$DEST"
+            echo "signed=$IS_SIGNED"
+            echo "size=$(du -h "$DEST" | cut -f1)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Prepared $(basename "$DEST") ($(du -h "$DEST" | cut -f1), signed=$IS_SIGNED)"
+
+      # Handy for debugging a failed release; the release asset below is the
+      # one people actually download.
+      - name: Upload the APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.apk_name }}
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Write the release notes
+        id: notes
+        run: |
+          {
+            echo 'body<<RELEASE_NOTES_EOF'
+            echo "## Tally Wall ${{ steps.version.outputs.tag }}"
+            echo ""
+            echo "### Android"
+            echo ""
+            echo "Download **${{ steps.version.outputs.apk_name }}** from the assets below."
+            echo ""
+            if [ "${{ steps.apk.outputs.signed }}" != "true" ]; then
+              echo "> **Warning**"
+              echo "> This APK is **unsigned** and will not install on a device."
+              echo "> Add the signing secrets described in the README and tag again."
+              echo ""
+            fi
+            echo "Android may warn about installing outside the Play Store; allow"
+            echo "installation from your browser or file manager to continue."
+            echo ""
+            echo "- Version name: \`${{ steps.version.outputs.version }}\`"
+            echo "- Version code: \`${{ github.run_number }}\`"
+            echo "- Minimum Android: 7.0 (API 24)"
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # generate_release_notes asks GitHub to write the "What's Changed"
+      # section from the commits since the previous tag, so release notes are
+      # never maintained by hand.
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Tally Wall ${{ steps.version.outputs.tag }}
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: true
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          draft: false
+          fail_on_unmatched_files: true
+          files: ${{ steps.apk.outputs.path }}
+
+      - name: Summarise
+        run: |
+          {
+            echo "### Tally Wall ${{ steps.version.outputs.tag }} published"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| APK | \`${{ steps.version.outputs.apk_name }}\` (${{ steps.apk.outputs.size }}) |"
+            echo "| Signed | ${{ steps.apk.outputs.signed }} |"
+            echo "| versionName | ${{ steps.version.outputs.version }} |"
+            echo "| versionCode | ${{ github.run_number }} |"
+            echo "| Prerelease | ${{ steps.version.outputs.prerelease }} |"
+            echo ""
+            echo "[Open the release](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }})"
+          } >> "$GITHUB_STEP_SUMMARY"
