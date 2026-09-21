@@ -1671,6 +1671,8 @@
 .room-label.fresh { border-color: var(--amber); }
 .room-label.fresh .room-label-title { color: var(--amber); }
 @keyframes room-label-in { from { opacity: 0; translate: -50% calc(-100% + 2px); } }
+.room-label { transition: opacity 0.6s ease-in; }
+.room-label.leaving { opacity: 0; }
 [data-theme="neon"] .room-label {
   background: rgba(5, 4, 15, 0.94);
   border-color: var(--n-cyan-soft);
