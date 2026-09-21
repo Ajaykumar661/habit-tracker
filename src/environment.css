@@ -1593,6 +1593,18 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+/* On a phone she is drawn ~45x19px -- too small for a thumb. The tap area
+   reaches past her on every side (a pseudo-element is part of the button),
+   to at least 56x48, without moving or resizing her. */
+.room-cat-hit::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100% + 16px, 56px);
+  height: max(100% + 24px, 48px);
+  translate: -50% -55%;
+}
 .room-cat-hit:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
