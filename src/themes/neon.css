@@ -128,7 +128,9 @@
 }
 
 /* ---- top bar and tab bar ---------------------------------------------- */
-[data-theme="neon"] .hud-top .topbar {
+/* Desktop only. On a phone the gear and + float over the scene with no bar
+   behind them (as in the keep); a lit bar there hid the top of the view. */
+[data-theme="neon"] .hud-top .topbar:not(.topbar-mobile) {
   background: rgba(5, 4, 16, 0.8);
   border-bottom: 1px solid var(--n-cyan-soft);
   box-shadow: 0 1px 12px rgba(60, 232, 255, 0.18);
@@ -144,6 +146,44 @@
   box-shadow: 0 0 0 2px rgba(3, 2, 12, 0.7), 0 0 18px rgba(255, 79, 200, 0.25), 4px 6px 0 rgba(0, 0, 0, 0.35);
 }
 [data-theme="neon"] .hud-action .day-counter { text-shadow: 0 0 10px rgba(255, 79, 200, 0.7), 2px 2px 0 #000; }
+[data-theme="neon"] .day-block {
+  background: rgba(4, 3, 14, 0.7);
+  border-color: var(--n-pink-soft);
+  box-shadow: inset 0 0 12px rgba(255, 79, 200, 0.12);
+}
+[data-theme="neon"] .day-block.done {
+  border-color: rgba(69, 255, 176, 0.75);
+  background: rgba(4, 22, 18, 0.7);
+  box-shadow: inset 0 0 12px rgba(69, 255, 176, 0.15), 0 0 10px rgba(69, 255, 176, 0.2);
+}
+[data-theme="neon"] .day-block.done .day-counter { color: #b9ffe0; text-shadow: 0 0 10px rgba(69, 255, 176, 0.7), 2px 2px 0 #000; }
+[data-theme="neon"] .day-status { text-shadow: 0 0 6px rgba(69, 255, 176, 0.6); }
+
+/* the action keys: lit glass, not brass */
+[data-theme="neon"] .hud-action .action-mark,
+[data-theme="neon"] .hud-action .quest-step.add {
+  color: var(--n-cyan);
+  background: linear-gradient(180deg, rgba(60, 232, 255, 0.2) 0 45%, rgba(60, 232, 255, 0.1) 45% 100%);
+  border: 2px solid var(--n-cyan);
+  text-shadow: 0 0 6px rgba(60, 232, 255, 0.8);
+  box-shadow: inset 0 0 14px rgba(60, 232, 255, 0.25), 0 0 14px rgba(60, 232, 255, 0.35), 3px 4px 0 rgba(0, 0, 0, 0.6);
+}
+[data-theme="neon"] .hud-action .action-mark:hover,
+[data-theme="neon"] .hud-action .quest-step.add:hover { background: rgba(60, 232, 255, 0.28); filter: none; }
+[data-theme="neon"] .hud-action .action-undo {
+  color: var(--n-pink);
+  background: rgba(20, 3, 16, 0.6);
+  border: 2px solid var(--n-pink-soft);
+  text-shadow: 0 0 6px rgba(255, 79, 200, 0.7);
+  box-shadow: 0 0 10px rgba(255, 79, 200, 0.2), 2px 3px 0 rgba(0, 0, 0, 0.6);
+}
+[data-theme="neon"] .hud-action .action-undo:hover { background: rgba(255, 79, 200, 0.18); color: #ff9ae2; }
+[data-theme="neon"] .hud-action .quest-step {
+  color: var(--n-text);
+  background: rgba(4, 3, 14, 0.7);
+  border: 2px solid var(--n-cyan-faint);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.6);
+}
 [data-theme="neon"] .hud-action .rally { border-color: var(--n-cyan-soft); background: rgba(5, 4, 15, 0.6); }
 [data-theme="neon"] .hud-action .rally.won { border-color: rgba(69, 255, 176, 0.8); }
 [data-theme="neon"] .hud-action .rally-line { color: var(--n-text); }
@@ -248,4 +288,26 @@
 [data-theme="neon"] .topbar-mobile .pixel-icon-btn {
   background: var(--n-cyan);
   box-shadow: inset -3px -4px 0 0 var(--amber-dim), inset 3px 3px 0 0 #c9f8ff, 3px 3px 0 0 #000, var(--n-glow-cyan);
+}
+
+/* ---- volume: a lit fader with a glowing knob ------------------------ */
+[data-theme="neon"] .vol-slider {
+  --vol-track: rgba(4, 3, 14, 0.85);
+  --vol-fill: linear-gradient(90deg, var(--n-violet), var(--n-cyan));
+  --vol-edge: var(--n-cyan-soft);
+  --vol-knob: #0b0920;
+}
+[data-theme="neon"] .vol-sfx   { --vol-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%233ce8ff' d='M1 3h2v2h-2zM3 2h1v4h-1zM4 1h1v6h-1zM6 3h1v2h-1zM8 2h1v4h-1z'/%3E%3C/svg%3E"); }
+[data-theme="neon"] .vol-music { --vol-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ff4fc8' d='M5 1h1v5h-1zM6 1h2v1h-2zM7 2h1v1h-1zM2 5h3v2h-3zM3 4h2v1h-2z'/%3E%3C/svg%3E"); }
+[data-theme="neon"] .vol-slider input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--n-violet), var(--n-cyan)) 0 0 / var(--fill, 50%) 100% no-repeat, var(--vol-track);
+  box-shadow: 0 0 8px rgba(60, 232, 255, 0.2);
+}
+[data-theme="neon"] .vol-slider input[type="range"]::-webkit-slider-thumb {
+  border-color: var(--n-cyan);
+  box-shadow: 0 0 10px rgba(60, 232, 255, 0.55), 2px 2px 0 #000;
+}
+[data-theme="neon"] .vol-music input[type="range"]::-webkit-slider-thumb {
+  border-color: var(--n-pink);
+  box-shadow: 0 0 10px rgba(255, 79, 200, 0.55), 2px 2px 0 #000;
 }

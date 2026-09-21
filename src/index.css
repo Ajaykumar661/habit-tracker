@@ -290,13 +290,6 @@ body { line-height: 1.6; font-size: 11px; }
 .pixel-btn-tiny { background: var(--amber); box-shadow: inset -2px -3px 0 0 var(--amber-dim), inset 2px 2px 0 0 #f6dcb0, 2px 2px 0 0 var(--shadow-dark); padding: 6px 10px; font-size: 10px; }
 .pixel-btn-danger { background: var(--red); box-shadow: inset -3px -4px 0 0 var(--red-dim), inset 3px 3px 0 0 #e2a49d, 3px 3px 0 0 var(--shadow-dark); }
 
-.btn-complete-state {
-  background: var(--panel-alt) !important;
-  color: var(--green) !important;
-  box-shadow: inset 0 0 0 2px var(--green-dim), 3px 3px 0 0 var(--shadow-dark) !important;
-  cursor: default !important;
-}
-
 /* ============================================================
    Cell log (calendar + bars) — supporting history, de-emphasized
    ============================================================ */
@@ -412,8 +405,52 @@ body { line-height: 1.6; font-size: 11px; }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(4, 5, 3, 0.72);
   display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;
+  /* Keep dialogs inside the safe area. Inside the Android app the page is
+     drawn edge to edge, under the status bar and the navigation buttons,
+     and a dialog centred on the whole screen put its bottom row under the
+     back/home buttons where it could not be tapped. */
+  padding:
+    calc(16px + env(safe-area-inset-top, 0px))
+    calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px))
+    calc(16px + env(safe-area-inset-left, 0px));
 }
-.modal { min-width: 260px; max-width: 90vw; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.modal {
+  min-width: 260px; max-width: 90vw; padding: 18px; display: flex; flex-direction: column; gap: 14px;
+  /* Never taller than what is actually visible -- dvh tracks a phone
+     browser's address bar, the plain vh line is the fallback -- and scroll
+     inside rather than run off the bottom of the screen. */
+  max-height: calc(100vh - 32px);
+  max-height: min(100%, calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The close button: pinned to the dialog's top-right corner, so it stays in
+   reach however far the dialog is scrolled. The X is drawn, because the
+   pixel font has no multiplication sign. */
+.modal-x {
+  position: sticky;
+  top: -10px;
+  z-index: 3;
+  align-self: flex-end;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -10px -10px -42px 0;   /* sit in the corner, over the title row */
+  padding: 0;
+  background: var(--panel-alt);
+  border: 2px solid var(--amber-dim);
+  cursor: pointer;
+}
+.modal-x:hover, .modal-x:focus-visible { border-color: var(--amber); outline: none; }
+.modal-x::before, .modal-x::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 14px; height: 2px;
+  background: var(--cream);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.modal-x::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .modal-title { font-size: 12px; color: var(--amber); letter-spacing: 1px; text-align: center; }
 .modal-body { font-size: 10px; color: var(--cream); line-height: 1.8; }
 .modal-actions { display: flex; justify-content: center; gap: 10px; }

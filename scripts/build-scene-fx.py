@@ -243,10 +243,12 @@ FRAMES = {
         'lanterns': [(102, 772, 58), (837, 772, 58), (50, 1203, 50)],
         'cat': (748, 1208),
         # On a phone the action panel covers x172-766 / y1107-1474, which is
-        # exactly where the painted cat lies. The breathing sprite goes in the
-        # clear column right of it instead, and the Zs follow it there.
-        # (x, bottom-y, width) — the slab sits on that baseline.
-        'cat_sprite': (810, 1392, 86),
+        # exactly where the painted cat lies. The sprite used to sleep in the
+        # column to the right, but the panel and quote still reached her on
+        # some phones; now she sleeps on the lintel ledge above the wall, in
+        # front of the vista, where nothing on the interface ever sits.
+        # (x, bottom-y, width) -- the slab sits on that baseline.
+        'cat_sprite': (655, 431, 86),
         'scale': 1.45,                        # sky window is bigger in this frame
     },
 }
@@ -585,9 +587,10 @@ NEON_FRAMES = {
         'glow_spots': [(247, 315, 80), (661, 379, 80)],
         'bird_zone': (170, 250, 770, 440),
         'bat_zone': (170, 250, 770, 440),
-        'cat': (800, 1300),
-        # on the big air-conditioner, right of the (narrowed) quote plaque
-        'cat_sprite': (800, 1400, 104),
+        'cat': (690, 440),
+        # On top of the steel name plate, by the railing: above the wall, so
+        # the action panel and quote below it can never cover her.
+        'cat_sprite': (690, 480, 84),
         'scale': 1.45,
     },
 }
@@ -618,6 +621,23 @@ THEMES = {
 }
 
 
+def cat_seam(cell):
+    """Where the sleeping cat meets her ledge, as a fraction of the cell height.
+
+    The ledge -- slab, shelf or bracket -- is the widest thing in the sprite,
+    and it starts where the row width jumps to (nearly) full. The app splits
+    the sprite there so her body can breathe and shift while the ledge stays
+    put; scaling the whole sprite would stretch the ledge with her. (Frame
+    differences can't be used: generated frames differ everywhere slightly.)
+    """
+    strip = np.array(Image.open(OUT_DIR / 'cat.png').convert('RGBA'))
+    alpha = strip[:, :cell['cw'], 3]
+    widths = (alpha > 40).sum(axis=1)
+    full = widths.max() * 0.97
+    first = int(np.argmax(widths >= full))
+    return round(max(0, first - 1) / cell['ch'], 3)
+
+
 def main():
     preview = None
     if '--preview' in sys.argv:
@@ -635,6 +655,7 @@ def main():
     manifest = {'strips': {}, 'static': None, 'placements': {}}
     statics = T['slice'](manifest, glow)
     manifest['static'] = pack_static(statics)
+    manifest['strips']['cat']['seam'] = cat_seam(manifest['strips']['cat'])
 
     print('strips:', ', '.join(f"{k}({v['frames']}@{v['cw']}x{v['ch']})"
                                for k, v in manifest['strips'].items()))

@@ -272,7 +272,31 @@
 /* ---- the sleeping cat ------------------------------------------------ */
 /* One slow breath, held a whole frame at a time. The slab is fixed in the
    artwork, so only the body rises and falls. */
-.fx-cat { animation-name: fx-f6; animation-timing-function: steps(1, end); }
+/* The cat is two layers of one strip, split at `--seam` where she meets
+   her ledge. The ledge holds still on frame 0; the body above it cycles its
+   frames, breathes from the seam up, and every so often shifts in her
+   sleep -- small enough to notice only if you are looking. */
+.fx-cat-ledge {
+  background-position-x: 0%;
+  clip-path: inset(var(--seam, 100%) 0 0 0);
+  animation: none;
+}
+.fx-cat {
+  clip-path: inset(0 0 calc(100% - var(--seam, 100%)) 0);
+  transform-origin: 50% var(--seam, 100%);
+  animation-name: fx-f6, fx-cat-breathe, fx-cat-settle;
+  animation-timing-function: steps(1, end), ease-in-out, ease-in-out;
+}
+@keyframes fx-cat-breathe {
+  0%, 100% { scale: 1 1; }
+  45%      { scale: 1.012 1.035; }
+}
+@keyframes fx-cat-settle {
+  0%, 78%, 100% { rotate: 0deg; translate: 0 0; }
+  82%           { rotate: -2deg; translate: -1.5% 0; }
+  86%           { rotate: 1deg; translate: 0.5% 0; }
+  90%           { rotate: 0deg; translate: 0 0; }
+}
 
 .fx-zzz {
   animation-name: fx-zzz;
@@ -775,9 +799,21 @@
 }
 
 .quest-counter-actions { display: flex; gap: 8px; justify-content: center; }
-.quest-step { min-width: 62px; }
-.quest-step.add { background: var(--green); box-shadow: inset -3px -4px 0 0 var(--green-dim), inset 3px 3px 0 0 #c8dcb8, 3px 3px 0 0 var(--shadow-dark); }
-.quest-step:disabled { opacity: 0.45; }
+.quest-step { min-width: 70px; min-height: 40px; font-size: 10px; }
+.hud-action .quest-step {
+  color: #e8d3a6;
+  background: rgba(20, 13, 6, 0.6);
+  border: 2px solid rgba(138, 106, 58, 0.85);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.5);
+}
+.hud-action .quest-step.add {
+  flex: 1 1 auto;
+  color: #2a1a08;
+  background: linear-gradient(180deg, #f2d27e 0 45%, #dcae55 45% 100%);
+  border-color: #2e2013;
+  box-shadow: inset 0 2px 0 #fff2c4, inset 0 -3px 0 #a8762e, 0 0 0 2px var(--bronze), 2px 3px 0 1px rgba(0, 0, 0, 0.5);
+}
+.quest-step:disabled { opacity: 0.4; }
 
 .target-row { display: flex; gap: 10px; }
 .target-field { flex: 1 1 0; min-width: 0; display: block; }
@@ -996,21 +1032,60 @@
   margin: 14px 0 6px;
 }
 .settings-row .pixel-btn { display: inline-flex; align-items: center; gap: 6px; }
-.settings-slider {
+/* ---- volume: a carved channel and a brass knob that shows what it moves */
+.vol-slider {
+  --vol-track: rgba(8, 6, 3, 0.7);
+  --vol-fill: #dcae55;
+  --vol-edge: #2e2013;
+  --vol-knob: linear-gradient(180deg, #f2d27e 0 50%, #dcae55 50% 100%);
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 8.5px;
-  color: var(--cream-dim);
-  letter-spacing: 1px;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
-.settings-slider input[type="range"] {
+.vol-sfx   { --vol-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%232a1a08' d='M1 3h2v2h-2zM3 2h1v4h-1zM4 1h1v6h-1zM6 3h1v2h-1zM8 2h1v4h-1z'/%3E%3C/svg%3E"); }
+.vol-music { --vol-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%232a1a08' d='M5 1h1v5h-1zM6 1h2v1h-2zM7 2h1v1h-1zM2 5h3v2h-3zM3 4h2v1h-2z'/%3E%3C/svg%3E"); }
+.vol-readout { flex: 0 0 4ch; font-size: 8.5px; color: var(--cream-dim); text-align: right; letter-spacing: 1px; }
+.vol-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
   flex: 1;
   min-width: 0;
-  height: 18px;
-  accent-color: var(--amber);
+  height: 30px;
+  margin: 0;
+  background: transparent;
   cursor: pointer;
+}
+.vol-slider input[type="range"]:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+.vol-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  background: linear-gradient(90deg, var(--vol-fill) 0 var(--fill, 50%), var(--vol-track) var(--fill, 50%) 100%);
+  border: 2px solid var(--vol-edge);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.vol-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  background: var(--vol-icon) center / 16px 14px no-repeat, var(--vol-knob);
+  border: 2px solid var(--vol-edge);
+  box-shadow: inset 0 2px 0 rgba(255, 242, 196, 0.8), 2px 2px 0 rgba(0, 0, 0, 0.55);
+  image-rendering: pixelated;
+}
+.vol-slider input[type="range"]::-moz-range-track {
+  height: 10px;
+  background: var(--vol-track);
+  border: 2px solid var(--vol-edge);
+}
+.vol-slider input[type="range"]::-moz-range-progress { height: 10px; background: var(--vol-fill); }
+.vol-slider input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 0;
+  background: var(--vol-icon) center / 16px 14px no-repeat, var(--vol-knob);
+  border: 2px solid var(--vol-edge);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
 }
 .settings-section { border-top: 1px dashed rgba(138, 106, 58, 0.5); margin-top: 14px; padding-top: 12px; }
 .settings-label { font-size: 9px; color: var(--gold-text); letter-spacing: 1px; margin-bottom: 8px; }
@@ -1152,15 +1227,36 @@
   border: 2px solid var(--hud-wood-edge);
   box-shadow: 0 0 0 2px rgba(10, 7, 4, 0.55), 4px 6px 0 rgba(0, 0, 0, 0.3);
 }
-.hud-action .wall-stats-strip { background: none; border: 0; padding: 0; }
+/* The day and the action share one row: a small inset block with the
+   count, and the button filling the rest. */
+.action-row { display: flex; align-items: stretch; gap: 12px; align-self: stretch; }
+.day-block {
+  flex: 0 0 auto;
+  min-width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 10px 6px;
+  background: rgba(8, 6, 3, 0.55);
+  border: 2px solid rgba(138, 106, 58, 0.7);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s, background-color 0.3s;
+}
+.day-caption, .day-status { font-size: 7px; letter-spacing: 2px; color: var(--cream-dim); line-height: 1; }
+.day-status { color: var(--green); }
 .hud-action .day-counter {
   font-size: 22px;
+  line-height: 1;
   margin: 0;
   white-space: nowrap;
-  letter-spacing: 4px;
+  letter-spacing: 1px;
   color: var(--gold-text);
   text-shadow: 2px 2px 0 #000;
 }
+.day-block.done { border-color: rgba(143, 174, 116, 0.85); background: rgba(22, 32, 14, 0.6); }
+.day-block.done .day-counter { color: #cfe6b4; }
 /* A shield was spent to save the run. Stated, not celebrated. */
 .shield-notice {
   margin: 0;
@@ -1184,11 +1280,60 @@
 @keyframes risk-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .streak-risk { animation: none; opacity: 1; } }
 
-.hud-action .wall-actions { display: flex; justify-content: center; gap: 10px; align-items: center; padding: 0; background: none; border: 0; }
+.hud-action .wall-actions {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: stretch;
+  gap: 10px;
+  align-items: stretch;
+  padding: 0;
+  background: none;
+  border: 0;
+}
 .hud-action .pixel-btn { white-space: nowrap; }
-.hud-action .pixel-btn-big { font-size: 12px; padding: 12px 20px; }
-.hud-action .pixel-btn-danger { font-size: 10px; padding: 11px 14px; }
 .hud-action .label-compact { display: none; }
+
+/* ---- the action buttons: a brass key and a quiet way back ------------ */
+.hud-action .action-btn {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 16px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  transition: filter 0.15s, background-color 0.15s;
+}
+.hud-action .action-mark {
+  color: #2a1a08;
+  background: linear-gradient(180deg, #f2d27e 0 45%, #dcae55 45% 100%);
+  border: 2px solid #2e2013;
+  box-shadow:
+    inset 0 2px 0 #fff2c4,
+    inset 0 -4px 0 #a8762e,
+    0 0 0 2px var(--bronze),
+    3px 4px 0 2px rgba(0, 0, 0, 0.55);
+  text-shadow: 1px 1px 0 rgba(255, 240, 200, 0.5);
+}
+.hud-action .action-mark:hover { filter: brightness(1.08); }
+.hud-action .action-undo {
+  flex: 0 1 auto;
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #e7a097;
+  background: rgba(20, 10, 6, 0.55);
+  border: 2px solid rgba(193, 85, 75, 0.75);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.5);
+}
+.hud-action .action-undo:hover { background: rgba(193, 85, 75, 0.2); color: #f4c3bb; }
+.action-undo-glyph { width: 12px; height: 12px; flex: 0 0 auto; }
+/* When undo is all there is, it takes the row -- a single small button
+   floating at the edge looked like a stray. */
+.hud-action .wall-actions:not(.measured) .action-undo { flex: 1 1 auto; margin-left: 0; }
+.hud-action .wall-actions.measured .action-undo { align-self: center; margin-left: 0; min-height: 40px; padding: 9px 16px; }
 
 .hud-bottom .quote-plaque {
   margin: 0;
@@ -1199,8 +1344,16 @@
   box-shadow: 0 0 0 2px var(--bronze), inset 0 0 0 2px rgba(255, 245, 215, 0.35), 4px 5px 0 rgba(0, 0, 0, 0.4);
 }
 .hud-bottom .quote-plaque-hook { display: none; }
-.hud-bottom .quote-plaque { text-align: center; }
-.hud-bottom .quote-plaque-text { font-size: 10.5px; line-height: 1.9; color: #2e2013; }
+.hud-bottom .quote-plaque { text-align: center; align-self: center; width: 100%; padding: 14px 22px; }
+.hud-bottom .quote-plaque-text {
+  font-size: 11px;
+  line-height: 2.1;
+  letter-spacing: 0.5px;
+  color: #2a1c10;
+  text-wrap: balance;
+  margin: 0 auto;
+  max-width: 46ch;
+}
 
 /* Desktop only (see the phone breakpoint below) — mobile uses the bottom
    tab bar's Calendar tab instead. */
@@ -1301,49 +1454,16 @@
    ============================================================ */
 @media (max-width: 700px) {
   .scene-routine-name { font-size: 11px; }
-  .hud-action { padding: 12px; gap: 12px; }
+  .hud-action { padding: 10px; gap: 10px; }
+  .action-row { gap: 10px; }
+  .day-block { min-width: 64px; padding: 6px 8px 5px; }
   .hud-action .day-counter { font-size: 18px; }
-  /* "+ MARK TODAY COMPLETE" vs "UNDO TALLY" made one button dwarf the
-     other even at matched font-size/padding — swap to short labels (close
-     in length to "UNDO TALLY") and split the row evenly, so the pair reads
-     as one deliberate two-button bar instead of a big button + a small one. */
+  /* short labels on a phone: "+ COMPLETE" / "UNDO TALLY" */
   .hud-action .label-full { display: none; }
   .hud-action .label-compact { display: inline; }
-  /* A shield was spent to save the run. Stated, not celebrated. */
-.shield-notice {
-  margin: 0;
-  font-size: 8px;
-  letter-spacing: 1px;
-  text-align: center;
-  color: #9fc4e8;
-  text-shadow: 1px 1px 0 #000;
-}
-
-/* Shown only when a live streak is still unmarked late in the day. */
-.streak-risk {
-  margin: 0;
-  font-size: 8px;
-  letter-spacing: 1px;
-  text-align: center;
-  color: var(--red);
-  text-shadow: 1px 1px 0 #000;
-  animation: risk-pulse 2.4s ease-in-out infinite;
-}
-@keyframes risk-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .streak-risk { animation: none; opacity: 1; } }
-
-.hud-action .wall-actions { align-items: stretch; }
-  .hud-action .wall-actions > .pixel-btn { flex: 1 1 0; min-width: 0; }
-  .hud-action .pixel-btn-big,
-  .hud-action .pixel-btn-danger { font-size: 10px; padding: 10px 8px; }
-  .hud-bottom .quote-plaque { padding: 10px 14px; }
-  .hud-bottom .quote-plaque-text { font-size: 9px; }
-  /* The cat sleeps on a slab painted into the bottom-right of the room, and
-     the quote plaque was stretched to the action box's full width straight
-     over it -- on a phone with the browser's URL bar showing, it covered up
-     to 91% of her. The quote is decorative, so it gives up the corner
-     rather than the cat. The action buttons keep the full width. */
-  .hud-bottom .quote-plaque { align-self: flex-start; max-width: 74%; text-align: left; }
+  .hud-action .action-btn { min-height: 48px; font-size: 10px; padding: 10px 10px; }
+  .hud-bottom .quote-plaque { padding: 11px 14px; }
+  .hud-bottom .quote-plaque-text { font-size: 9.5px; line-height: 2; }
   .data-view {
     padding: 28px calc(12px + var(--safe-right)) calc(48px + var(--safe-bottom)) calc(12px + var(--safe-left));
   }
@@ -1360,7 +1480,7 @@
   /* clears the mobile tab bar, which is fixed to the bottom edge */
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 10px);
   left: 10px;
-  z-index: 10002;
+  z-index: 9000;   /* above the room, below dialogs (9999) */
   display: flex;
   gap: 4px;
   background: rgba(0, 0, 0, 0.75);

@@ -92,7 +92,7 @@ export const GUIDE_PAGES = [
       'RECORD holds your streaks, totals and completion rate.',
       'ACHIEVEMENTS shows fifteen deeds. Locked ones still show how close you are.',
       'KINGDOM REPORT sums up your week and names patterns, once there is enough history to mean anything.',
-      'On a phone, find these under the Records & Achievements tab.',
+      'On a phone, find these under the Records tab.',
     ],
   },
   {

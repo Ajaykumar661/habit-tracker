@@ -14,6 +14,28 @@ const HOURS = Array.from(
   (_, i) => MIN_CUTOFF_HOUR + i,
 );
 
+/**
+ * A volume slider whose knob carries what it controls -- a speaker for the
+ * effects, a note for the music -- so the two read at a glance instead of
+ * as two identical browser bars. The fill is painted from --fill.
+ */
+function VolumeSlider({ kind, label, value, onChange, onRelease }) {
+  const pct = Math.round(value * 100);
+  return (
+    <label className={`vol-slider vol-${kind}`}>
+      <input
+        type="range" min="0" max="100" step="5"
+        aria-label={label}
+        value={pct}
+        style={{ '--fill': `${pct}%` }}
+        onChange={(e) => onChange(Number(e.target.value) / 100)}
+        onPointerUp={onRelease}
+      />
+      <span className="vol-readout" aria-hidden="true">{pct}%</span>
+    </label>
+  );
+}
+
 // Settings, and the only route in or out of the device for the tally history.
 // Restoring replaces everything, so it asks first and says exactly what it
 // found in the file before doing it.
@@ -86,20 +108,13 @@ export default function SettingsSheet({
       </div>
 
       {!muted && (
-        <label className="settings-slider">
-          <span>VOLUME</span>
-          <input
-            type="range" min="0" max="100" step="5"
-            aria-label="Sound effects volume"
-            value={Math.round(sfxVol * 100)}
-            onChange={(e) => {
-              const v = Number(e.target.value) / 100;
-              setSfxVol(v);
-              SoundFX.setVolume(v);
-            }}
-            onPointerUp={() => SoundFX.click()}
-          />
-        </label>
+        <VolumeSlider
+          kind="sfx"
+          label="Sound effects volume"
+          value={sfxVol}
+          onChange={(v) => { setSfxVol(v); SoundFX.setVolume(v); }}
+          onRelease={() => SoundFX.click()}
+        />
       )}
 
       <div className="settings-row">
@@ -113,19 +128,12 @@ export default function SettingsSheet({
         </button>
       </div>
       {musicOn && (
-        <label className="settings-slider">
-          <span>VOLUME</span>
-          <input
-            type="range" min="0" max="100" step="5"
-            aria-label="Music volume"
-            value={Math.round(musicVol * 100)}
-            onChange={(e) => {
-              const v = Number(e.target.value) / 100;
-              setMusicVol(v);
-              Music.setVolume(v);
-            }}
-          />
-        </label>
+        <VolumeSlider
+          kind="music"
+          label="Music volume"
+          value={musicVol}
+          onChange={(v) => { setMusicVol(v); Music.setVolume(v); }}
+        />
       )}
 
       <div className="settings-section">

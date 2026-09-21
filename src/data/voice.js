@@ -26,7 +26,7 @@ const reasons = (labels) => Object.fromEntries(BREAK_REASONS.map((r) => [r.id, l
 // The words the app has always used, gathered here unchanged.
 const medieval = {
   newHabit: '+ NEW ROUTINE',
-  tabs: { routines: 'Routines', calendar: 'Calendar', record: 'Records & Achievements' },
+  tabs: { routines: 'Routines', calendar: 'Calendar', record: 'Records' },
 
   quest: {
     board: 'TODAY’S QUEST',
@@ -164,7 +164,7 @@ const medieval = {
 // ---- Neon City --------------------------------------------------------------
 const neon = {
   newHabit: '+ NEW MISSION',
-  tabs: { routines: 'Missions', calendar: 'Logbook', record: 'Stats & Unlocks' },
+  tabs: { routines: 'Missions', calendar: 'Logbook', record: 'Stats' },
 
   quest: {
     board: 'TODAY’S MISSIONS',
