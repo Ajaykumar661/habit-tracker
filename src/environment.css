@@ -1746,3 +1746,12 @@
 .first-run-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
 [data-theme="neon"] .first-run-pick { background: rgba(5, 4, 15, 0.7); border-color: var(--n-cyan-faint); }
 [data-theme="neon"] .first-run-pick:hover, [data-theme="neon"] .first-run-pick:focus-visible { border-color: var(--n-cyan); box-shadow: 0 0 10px rgba(60, 232, 255, 0.3); }
+
+/* ---- larger text (Settings > TEXT SIZE) --------------------------------
+   `zoom` rather than a hundred font-size overrides: zoomed content re-flows
+   to its container's width, so nothing spills sideways -- panels just grow
+   taller and scroll. The room itself is never zoomed. */
+html[data-text="large"] :is(.hud-panel, .hud-bottom, .modal) > *,
+html[data-text="large"] .hud-tabbar,
+html[data-text="large"] .data-view > * { zoom: 1.2; }
+html[data-text="large"] .tray-label { line-height: 1.5; }
