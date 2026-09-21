@@ -4,6 +4,7 @@ import { WEEKDAY_NAMES } from '../lib/dates';
 import { DIFFICULTIES, HABIT_TYPES } from '../domain/schema';
 import { isMeasuredType, UNIT_SUGGESTIONS, SECONDS_PER_MINUTE } from '../domain/completion';
 import { editImpact, impactWarnings, nameTaken, FROZEN } from '../domain/editing';
+import { useVoice } from '../hooks/useVoice';
 
 // Creating a quest, and changing one afterwards. Kept as one short scroll of
 // wooden controls rather than a multi-step wizard — the whole point is that
@@ -30,6 +31,7 @@ const DEFAULT_TARGET = { count: 8, duration: 30, numeric: 30 };
 export default function AddRoutineModal({
   open, onClose, onCreate, onSave, today, editing = null, habits = [],
 }) {
+  const v = useVoice();
   const isEdit = !!editing;
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState(today);
@@ -77,7 +79,7 @@ export default function AddRoutineModal({
 
   // What the form is proposing, in the shape the domain expects.
   const proposed = {
-    name: name.trim() || 'MY ROUTINE',
+    name: name.trim() || v.editor.fallbackName,
     difficulty,
     target: measured
       ? (type === 'duration' ? targetNum * SECONDS_PER_MINUTE : targetNum)
@@ -116,9 +118,9 @@ export default function AddRoutineModal({
 
   return (
     <ModalOverlay open={open} onClose={onClose}>
-      <div className="modal-title">{isEdit ? 'EDIT QUEST' : 'NEW QUEST'}</div>
+      <div className="modal-title">{isEdit ? v.editor.edit : v.editor.create}</div>
       <div className="modal-body">
-        <label className="field-label" htmlFor="newRoutineName">QUEST NAME</label>
+        <label className="field-label" htmlFor="newRoutineName">{v.editor.name}</label>
         <input
           id="newRoutineName"
           ref={nameRef}
@@ -178,7 +180,7 @@ export default function AddRoutineModal({
           </div>
         )}
         {targetInvalid && <p className="field-hint warn">GOAL MUST BE AT LEAST 1</p>}
-        {duplicate && <p className="field-hint warn">A QUEST BY THAT NAME ALREADY EXISTS</p>}
+        {duplicate && <p className="field-hint warn">{v.editor.duplicate}</p>}
 
         <span className="field-label">HOW OFTEN</span>
         <div className="choice-row" role="radiogroup" aria-label="How often">

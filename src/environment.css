@@ -295,12 +295,171 @@
 }
 @keyframes fx-shaft { 0%, 100% { opacity: 0.16; } 50% { opacity: 0.36; } }
 
+/* ---- fluid motion ---------------------------------------------------
+   The original movement keyframes above ease-in-out, and CSS applies that
+   per keyframe SEGMENT -- so every firefly, mote and bird slowed to a dead
+   stop at each of its four waypoints. Inside .fx-fluid (every scene except
+   the hand-tuned medieval night) motion is continuous instead:
+
+     drifters   follow a smooth closed curve at constant speed (24 linear
+                steps per loop, so the path reads as a curve, not a polygon)
+     flyers     travel with easing only where they turn round, bob on their
+                own sine wave, and turn to face the way they are going --
+                every flyer sprite is drawn facing right, and they used to
+                fly the return leg backwards
+     sparks     that fall accelerate, as falling things do
+
+   Only transform, translate, scale, opacity and background-position move,
+   so all of it stays on the compositor. */
+@keyframes fx-drift-0 {
+  0% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+  4.167% { transform: translate(calc(var(--amp) * 0.318), calc(var(--amp) * -0.130)); }
+  8.333% { transform: translate(calc(var(--amp) * 0.570), calc(var(--amp) * -0.271)); }
+  12.5% { transform: translate(calc(var(--amp) * 0.721), calc(var(--amp) * -0.396)); }
+  16.667% { transform: translate(calc(var(--amp) * 0.779), calc(var(--amp) * -0.491)); }
+  20.833% { transform: translate(calc(var(--amp) * 0.784), calc(var(--amp) * -0.555)); }
+  25% { transform: translate(calc(var(--amp) * 0.780), calc(var(--amp) * -0.600)); }
+  29.167% { transform: translate(calc(var(--amp) * 0.784), calc(var(--amp) * -0.645)); }
+  33.333% { transform: translate(calc(var(--amp) * 0.779), calc(var(--amp) * -0.709)); }
+  37.5% { transform: translate(calc(var(--amp) * 0.721), calc(var(--amp) * -0.804)); }
+  41.667% { transform: translate(calc(var(--amp) * 0.570), calc(var(--amp) * -0.929)); }
+  45.833% { transform: translate(calc(var(--amp) * 0.318), calc(var(--amp) * -1.070)); }
+  50% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * -1.200)); }
+  54.167% { transform: translate(calc(var(--amp) * -0.318), calc(var(--amp) * -1.290)); }
+  58.333% { transform: translate(calc(var(--amp) * -0.570), calc(var(--amp) * -1.310)); }
+  62.5% { transform: translate(calc(var(--amp) * -0.721), calc(var(--amp) * -1.244)); }
+  66.667% { transform: translate(calc(var(--amp) * -0.779), calc(var(--amp) * -1.091)); }
+  70.833% { transform: translate(calc(var(--amp) * -0.784), calc(var(--amp) * -0.865)); }
+  75% { transform: translate(calc(var(--amp) * -0.780), calc(var(--amp) * -0.600)); }
+  79.167% { transform: translate(calc(var(--amp) * -0.784), calc(var(--amp) * -0.335)); }
+  83.333% { transform: translate(calc(var(--amp) * -0.779), calc(var(--amp) * -0.109)); }
+  87.5% { transform: translate(calc(var(--amp) * -0.721), calc(var(--amp) * 0.044)); }
+  91.667% { transform: translate(calc(var(--amp) * -0.570), calc(var(--amp) * 0.110)); }
+  95.833% { transform: translate(calc(var(--amp) * -0.318), calc(var(--amp) * 0.090)); }
+  100% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+}
+@keyframes fx-drift-1 {
+  0% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+  4.167% { transform: translate(calc(var(--amp) * -0.082), calc(var(--amp) * 0.087)); }
+  8.333% { transform: translate(calc(var(--amp) * -0.183), calc(var(--amp) * 0.090)); }
+  12.5% { transform: translate(calc(var(--amp) * -0.316), calc(var(--amp) * 0.034)); }
+  16.667% { transform: translate(calc(var(--amp) * -0.476), calc(var(--amp) * -0.047)); }
+  20.833% { transform: translate(calc(var(--amp) * -0.648), calc(var(--amp) * -0.114)); }
+  25% { transform: translate(calc(var(--amp) * -0.800), calc(var(--amp) * -0.140)); }
+  29.167% { transform: translate(calc(var(--amp) * -0.898), calc(var(--amp) * -0.114)); }
+  33.333% { transform: translate(calc(var(--amp) * -0.909), calc(var(--amp) * -0.047)); }
+  37.5% { transform: translate(calc(var(--amp) * -0.816), calc(var(--amp) * 0.034)); }
+  41.667% { transform: translate(calc(var(--amp) * -0.617), calc(var(--amp) * 0.090)); }
+  45.833% { transform: translate(calc(var(--amp) * -0.332), calc(var(--amp) * 0.087)); }
+  50% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+  54.167% { transform: translate(calc(var(--amp) * 0.332), calc(var(--amp) * -0.172)); }
+  58.333% { transform: translate(calc(var(--amp) * 0.617), calc(var(--amp) * -0.410)); }
+  62.5% { transform: translate(calc(var(--amp) * 0.816), calc(var(--amp) * -0.674)); }
+  66.667% { transform: translate(calc(var(--amp) * 0.909), calc(var(--amp) * -0.913)); }
+  70.833% { transform: translate(calc(var(--amp) * 0.898), calc(var(--amp) * -1.080)); }
+  75% { transform: translate(calc(var(--amp) * 0.800), calc(var(--amp) * -1.140)); }
+  79.167% { transform: translate(calc(var(--amp) * 0.648), calc(var(--amp) * -1.080)); }
+  83.333% { transform: translate(calc(var(--amp) * 0.476), calc(var(--amp) * -0.913)); }
+  87.5% { transform: translate(calc(var(--amp) * 0.316), calc(var(--amp) * -0.674)); }
+  91.667% { transform: translate(calc(var(--amp) * 0.183), calc(var(--amp) * -0.410)); }
+  95.833% { transform: translate(calc(var(--amp) * 0.082), calc(var(--amp) * -0.172)); }
+  100% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+}
+@keyframes fx-drift-2 {
+  0% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+  4.167% { transform: translate(calc(var(--amp) * 0.246), calc(var(--amp) * 0.244)); }
+  8.333% { transform: translate(calc(var(--amp) * 0.475), calc(var(--amp) * 0.409)); }
+  12.5% { transform: translate(calc(var(--amp) * 0.672), calc(var(--amp) * 0.447)); }
+  16.667% { transform: translate(calc(var(--amp) * 0.823), calc(var(--amp) * 0.343)); }
+  20.833% { transform: translate(calc(var(--amp) * 0.918), calc(var(--amp) * 0.117)); }
+  25% { transform: translate(calc(var(--amp) * 0.950), calc(var(--amp) * -0.180)); }
+  29.167% { transform: translate(calc(var(--amp) * 0.918), calc(var(--amp) * -0.477)); }
+  33.333% { transform: translate(calc(var(--amp) * 0.823), calc(var(--amp) * -0.703)); }
+  37.5% { transform: translate(calc(var(--amp) * 0.672), calc(var(--amp) * -0.807)); }
+  41.667% { transform: translate(calc(var(--amp) * 0.475), calc(var(--amp) * -0.769)); }
+  45.833% { transform: translate(calc(var(--amp) * 0.246), calc(var(--amp) * -0.604)); }
+  50% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * -0.360)); }
+  54.167% { transform: translate(calc(var(--amp) * -0.246), calc(var(--amp) * -0.104)); }
+  58.333% { transform: translate(calc(var(--amp) * -0.475), calc(var(--amp) * 0.097)); }
+  62.5% { transform: translate(calc(var(--amp) * -0.672), calc(var(--amp) * 0.193)); }
+  66.667% { transform: translate(calc(var(--amp) * -0.823), calc(var(--amp) * 0.163)); }
+  70.833% { transform: translate(calc(var(--amp) * -0.918), calc(var(--amp) * 0.023)); }
+  75% { transform: translate(calc(var(--amp) * -0.950), calc(var(--amp) * -0.180)); }
+  79.167% { transform: translate(calc(var(--amp) * -0.918), calc(var(--amp) * -0.383)); }
+  83.333% { transform: translate(calc(var(--amp) * -0.823), calc(var(--amp) * -0.523)); }
+  87.5% { transform: translate(calc(var(--amp) * -0.672), calc(var(--amp) * -0.553)); }
+  91.667% { transform: translate(calc(var(--amp) * -0.475), calc(var(--amp) * -0.457)); }
+  95.833% { transform: translate(calc(var(--amp) * -0.246), calc(var(--amp) * -0.256)); }
+  100% { transform: translate(calc(var(--amp) * 0.000), calc(var(--amp) * 0.000)); }
+}
+
+.fx-fluid .fx-firefly {
+  animation-name: fx-f4, fx-drift-0, fx-blink;
+  animation-timing-function: steps(1, end), linear, ease-in-out;
+  will-change: transform, opacity;
+}
+.fx-fluid .fx-firefly.fx-path-1 { animation-name: fx-f4, fx-drift-1, fx-blink; }
+.fx-fluid .fx-firefly.fx-path-2 { animation-name: fx-f4, fx-drift-2, fx-blink; }
+
+.fx-fluid .fx-mote {
+  animation-name: fx-drift-0, fx-breathe;
+  animation-timing-function: linear, ease-in-out;
+  will-change: transform, opacity;
+}
+.fx-fluid .fx-mote.fx-path-1 { animation-name: fx-drift-1, fx-breathe; }
+.fx-fluid .fx-mote.fx-path-2 { animation-name: fx-drift-2, fx-breathe; }
+
+/* Flyers: three independent properties, so each moves on its own clock.
+   `translate` carries them along the band, `scale` turns them round at each
+   end, and `transform` bobs them. The bob runs at a ninth of the crossing
+   time, alternating, which traces a sine. */
+.fx-fluid .fx-traveller {
+  animation-name: fx-f4, fx-travel, fx-face, fx-bob;
+  animation-duration: 0.42s, var(--dur, 22s), var(--dur, 22s), calc(var(--dur, 22s) / 9);
+  animation-timing-function: steps(1, end), ease-in-out, steps(1, end), ease-in-out;
+  animation-direction: normal, normal, normal, alternate;
+  animation-delay: var(--delay, 0s), var(--delay, 0s), var(--delay, 0s), calc(var(--delay, 0s) / 3);
+  will-change: translate, transform;
+}
+.fx-fluid .fx-traveller.fx-step-5 { animation-name: fx-f5, fx-travel, fx-face, fx-bob; }
+/* `flip` now means "sets off the other way", not "flies backwards" */
+.fx-fluid .fx-traveller.flip { scale: none; animation-name: fx-f4, fx-travel-rev, fx-face-rev, fx-bob; }
+.fx-fluid .fx-traveller.flip.fx-step-5 { animation-name: fx-f5, fx-travel-rev, fx-face-rev, fx-bob; }
+@keyframes fx-travel { 0%, 100% { translate: 0 0; } 50% { translate: var(--span) 0; } }
+@keyframes fx-travel-rev { 0%, 100% { translate: var(--span) 0; } 50% { translate: 0 0; } }
+@keyframes fx-face { 0% { scale: 1 1; } 50%, 100% { scale: -1 1; } }
+@keyframes fx-face-rev { 0% { scale: -1 1; } 50%, 100% { scale: 1 1; } }
+@keyframes fx-bob {
+  from { transform: translateY(calc(var(--bob) * -0.35)); }
+  to   { transform: translateY(calc(var(--bob) * 0.35)); }
+}
+
+/* Sparks shed by a faulty sign fall and speed up, drifting a touch. */
+.fx-fluid .fx-ember.fx-fall {
+  animation-name: fx-f3, fx-fall;
+  animation-timing-function: steps(1, end), cubic-bezier(0.45, 0, 0.9, 0.65);
+  will-change: transform, opacity;
+}
+@keyframes fx-fall {
+  0%   { transform: translate(0, 0) scale(0.8); opacity: 0; }
+  8%   { opacity: 1; }
+  65%  { opacity: 0.75; }
+  100% { transform: translate(calc(var(--rise) * -0.12), calc(var(--rise) * -1)) scale(1); opacity: 0; }
+}
+
 /* Anything that merely moves is stilled; anything whose whole point is
    movement is dropped. Flames keep cycling — a frozen fire reads as broken. */
 @media (prefers-reduced-motion: reduce) {
   .fx-cloud, .fx-mist, .fx-mote, .fx-star, .fx-shaft, .fx-fglow { animation: none; }
   .fx-cat { animation: none; }
   .fx-traveller, .fx-ember, .fx-shoot, .fx-zzz, .fx-firefly { display: none; }
+}
+
+/* The fluid rules above out-rank the plain reduced-motion ones, so they
+   repeat them: still the drifters, drop anything whose point is movement. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-fluid .fx-mote { animation: none; }
+  .fx-fluid .fx-traveller, .fx-fluid .fx-ember, .fx-fluid .fx-firefly { display: none; }
 }
 
 /* Edges only — the centre of the room stays untouched. */

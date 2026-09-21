@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Tray from './Tray';
+import { useVoice } from '../hooks/useVoice';
 
 function StatRow({ label, value }) {
   return (
@@ -20,20 +21,21 @@ function StatRow({ label, value }) {
 }
 
 export default function StatsPanel({ stats, progression }) {
+  const v = useVoice();
   return (
     /* The streak rides on the handle so a retracted ledger still says the
        one number worth seeing at a glance. */
-    <Tray area="stats" label="RECORD" count={`${stats.currentStreak}D`}>
+    <Tray area="stats" label={v.stats.title} count={`${stats.currentStreak}D`}>
       <dl className="stats-list">
-        <StatRow label="CURRENT STREAK" value={`${stats.currentStreak} DAYS`} />
-        <StatRow label="LONGEST SENTENCE" value={`${stats.bestStreak} DAYS`} />
-        <StatRow label="TOTAL TALLIES" value={`${stats.totalCompleted}`} />
-        <StatRow label="COMPLETION" value={`${stats.completionPct}%`} />
-        <StatRow label="MISSED DAYS" value={`${stats.missedDays}`} />
-        <StatRow label="DAYS TRACKED" value={`${stats.daysSinceStart}`} />
-        <StatRow label="STREAK SHIELDS" value={`${stats.shields?.available ?? 0}`} />
+        <StatRow label={v.stats.current} value={`${stats.currentStreak} DAYS`} />
+        <StatRow label={v.stats.best} value={`${stats.bestStreak} DAYS`} />
+        <StatRow label={v.stats.total} value={`${stats.totalCompleted}`} />
+        <StatRow label={v.stats.completion} value={`${stats.completionPct}%`} />
+        <StatRow label={v.stats.missed} value={`${stats.missedDays}`} />
+        <StatRow label={v.stats.tracked} value={`${stats.daysSinceStart}`} />
+        <StatRow label={v.stats.shields} value={`${stats.shields?.available ?? 0}`} />
         {progression?.perfect && (
-          <StatRow label="PERFECT DAYS" value={`${progression.perfect.total}`} />
+          <StatRow label={v.stats.perfect} value={`${progression.perfect.total}`} />
         )}
       </dl>
     </Tray>

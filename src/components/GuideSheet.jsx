@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ModalOverlay from './ModalOverlay';
 import PixelIcon from './PixelIcon';
-import { GUIDE_PAGES, roman } from '../data/guide';
+import { roman } from '../data/guide';
+import { useVoice } from '../hooks/useVoice';
 
 // The Warden's Guide, leafed through a page at a time.
 //
@@ -13,6 +14,7 @@ import { GUIDE_PAGES, roman } from '../data/guide';
 // explanation the reader can lose.
 
 export default function GuideSheet({ open, onClose }) {
+  const v = useVoice();
   const [page, setPage] = useState(0);
   const [dir, setDir] = useState(1);
   const reducedMotion = useReducedMotion();
@@ -34,8 +36,10 @@ export default function GuideSheet({ open, onClose }) {
 
   if (!open) return null;
 
-  const last = GUIDE_PAGES.length - 1;
-  const current = GUIDE_PAGES[page];
+  // each world tells the same eight pages in its own words
+  const pages = v.guide.pages;
+  const last = pages.length - 1;
+  const current = pages[page];
 
   function go(step) {
     setDir(step);
@@ -46,7 +50,7 @@ export default function GuideSheet({ open, onClose }) {
 
   return (
     <ModalOverlay open={open} onClose={onClose}>
-      <div className="modal-title">THE WARDEN&rsquo;S GUIDE</div>
+      <div className="modal-title">{v.guide.title}</div>
 
       <div className="guide-body">
         <AnimatePresence mode="wait" initial={false}>
@@ -74,7 +78,7 @@ export default function GuideSheet({ open, onClose }) {
       </div>
 
       <div className="guide-marker" aria-hidden="true">
-        {roman(page + 1)} OF {roman(GUIDE_PAGES.length)}
+        {roman(page + 1)} OF {roman(pages.length)}
       </div>
 
       <div className="modal-actions guide-actions">

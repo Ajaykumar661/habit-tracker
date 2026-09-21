@@ -94,15 +94,22 @@ function runEndingBefore(segments, date) {
   return best;
 }
 
+/** The medieval wording; a theme passes its own. Never reproachful. */
+export const RALLY_WORDS = {
+  won: 'THE RALLY IS WON. THE WALL STANDS AGAIN.',
+  startToday: 'ONE MARK TODAY BEGINS THE RALLY.',
+  startLater: 'THE RALLY BEGINS ON YOUR NEXT DUE DAY.',
+  oneMore: 'ONE MORE DAY AND THE RALLY IS WON.',
+  more: (n) => `${n} MORE DAYS TO WIN THE RALLY.`,
+};
+
 /** The line shown on the rally strip. Encouraging, never reproachful. */
-export function recoveryMessage(recovery) {
+export function recoveryMessage(recovery, words = RALLY_WORDS) {
   if (!recovery.active) return null;
-  if (recovery.complete) return 'THE RALLY IS WON. THE WALL STANDS AGAIN.';
+  if (recovery.complete) return words.won;
   if (recovery.daysBack === 0) {
-    return recovery.dueToday
-      ? 'ONE MARK TODAY BEGINS THE RALLY.'
-      : 'THE RALLY BEGINS ON YOUR NEXT DUE DAY.';
+    return recovery.dueToday ? words.startToday : words.startLater;
   }
-  if (recovery.remaining === 1) return 'ONE MORE DAY AND THE RALLY IS WON.';
-  return `${recovery.remaining} MORE DAYS TO WIN THE RALLY.`;
+  if (recovery.remaining === 1) return words.oneMore;
+  return words.more(recovery.remaining);
 }

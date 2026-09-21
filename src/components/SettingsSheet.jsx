@@ -7,6 +7,7 @@ import { backupStatus } from '../domain/upkeep';
 import { THEMES } from '../data/themes';
 import { Music } from '../lib/music';
 import { SoundFX } from '../lib/sound';
+import { useVoice } from '../hooks/useVoice';
 
 const HOURS = Array.from(
   { length: MAX_CUTOFF_HOUR - MIN_CUTOFF_HOUR + 1 },
@@ -20,6 +21,7 @@ export default function SettingsSheet({
   open, onClose, muted, onToggleMute, settings, onSetSetting, onOpenGuide,
   habits = [], archived = [], onRestore, onPurge,
 }) {
+  const v = useVoice();
   const fileRef = useRef(null);
   const [note, setNote] = useState(null);       // { kind: 'ok' | 'err', text }
   const [pending, setPending] = useState(null); // a parsed backup awaiting confirmation
@@ -40,7 +42,7 @@ export default function SettingsSheet({
       const { routines, tallies } = exportBackup();
       // Recorded so the app can say how long it has been since the last copy.
       onSetSetting('lastExportAt', new Date().toISOString());
-      setNote({ kind: 'ok', text: `SAVED ${tallies} TALLIES FROM ${routines} ROUTINE${routines === 1 ? '' : 'S'}` });
+      setNote({ kind: 'ok', text: v.settings.saved(tallies, routines) });
     } catch (e) {
       setNote({ kind: 'err', text: e.message.toUpperCase() });
     }
@@ -143,14 +145,14 @@ export default function SettingsSheet({
       </div>
 
       <div className="settings-row">
-        <span>THE GUIDE</span>
+        <span>{v.settings.guide}</span>
         <button type="button" className="pixel-btn pixel-btn-small" onClick={onOpenGuide}>
           READ
         </button>
       </div>
 
       <div className="settings-section">
-        <div className="settings-label">WHEN THE DAY TURNS</div>
+        <div className="settings-label">{v.settings.dayTurns}</div>
         <p className="settings-help">
           If you often finish after midnight, move the turn later and the late
           hours will still count for the day before.
@@ -170,20 +172,20 @@ export default function SettingsSheet({
         </div>
         <p className="settings-note-quiet">
           {cutoff === 0
-            ? 'THE DAY TURNS AT MIDNIGHT.'
-            : `A TALLY BEFORE ${cutoff}AM COUNTS FOR THE DAY BEFORE.`}
+            ? v.settings.midnight
+            : v.settings.before(cutoff)}
         </p>
       </div>
 
       <div className="settings-section">
-        <div className="settings-label">YOUR RECORD</div>
+        <div className="settings-label">{v.settings.record}</div>
         <p className="settings-help">
           Everything stays on this device. Keep a copy somewhere safe so a lost
           phone doesn&rsquo;t take the streak with it.
         </p>
         <p className={`settings-note-quiet${backup.overdue ? ' warn' : ''}`}>
           {backup.label}
-          {backup.tracked > 0 && ` · ${backup.tracked} DAYS OF RECORD`}
+          {backup.tracked > 0 && ` · ${backup.tracked} ${v.settings.daysOf}`}
         </p>
         {pending ? (
           <>
@@ -207,9 +209,9 @@ export default function SettingsSheet({
 
       {archived.length > 0 && (
         <div className="settings-section">
-          <div className="settings-label">RETIRED QUESTS</div>
+          <div className="settings-label">{v.settings.retired}</div>
           <p className="settings-help">
-            Their tallies are kept. Restore one to put it back on the board.
+            {v.settings.retiredHelp}
           </p>
           <ul className="archived-list">
             {archived.map((r) => (
@@ -217,7 +219,7 @@ export default function SettingsSheet({
                 <span className="archived-name">
                   {r.name}
                   <span className="archived-meta">
-                    {r.completed.length} {r.completed.length === 1 ? 'TALLY' : 'TALLIES'}
+                    {r.completed.length} {r.completed.length === 1 ? v.wall.one : v.wall.many}
                     {r.archivedAt && ` · ${formatDateLabel(r.archivedAt.slice(0, 10))}`}
                   </span>
                 </span>

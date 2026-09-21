@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { recoveryMessage } from '../domain/recovery';
+import { useVoice } from '../hooks/useVoice';
 
 // The rally: a short, winnable goal offered in the days after a break.
 //
@@ -8,10 +9,11 @@ import { recoveryMessage } from '../domain/recovery';
 // layer says a rally is genuinely underway, and it says nothing about what
 // was lost — the streak modal already did that, once.
 export default function RallyStrip({ recovery }) {
+  const v = useVoice();
   const reducedMotion = useReducedMotion();
   if (!recovery?.active) return null;
 
-  const line = recoveryMessage(recovery);
+  const line = recoveryMessage(recovery, v.rally.words);
   const pips = Array.from({ length: recovery.goal }, (_, i) => i < recovery.daysBack);
 
   return (
@@ -22,7 +24,7 @@ export default function RallyStrip({ recovery }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
     >
-      <span className="rally-label">THE RALLY</span>
+      <span className="rally-label">{v.rally.label}</span>
       <span className="rally-pips" aria-hidden="true">
         {pips.map((lit, i) => (
           <span key={i} className={`rally-pip${lit ? ' lit' : ''}`} />

@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { pad2, formatDateLabel, MONTH_NAMES } from '../lib/dates';
 import { isScheduledOn, describeSchedule } from '../domain/schedule';
+import { useVoice } from '../hooks/useVoice';
 
 export default function Calendar({ routine, today, shieldedDates, notes, cursor, onPrevMonth, onNextMonth, onOpenDay, onTooltip, onMoveTooltip, onHideTooltip }) {
+  const v = useVoice();
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const firstOfMonth = new Date(year, month, 1);
@@ -69,8 +71,8 @@ export default function Calendar({ routine, today, shieldedDates, notes, cursor,
               onClick={inRange ? () => onOpenDay(dateStr) : undefined}
               onMouseEnter={(e) => onTooltip(e, [
                 formatDateLabel(dateStr),
-                isDone ? 'TALLY MARKED' : isShielded ? 'SHIELD SPENT' : (!isScheduled && !isBeforeStart && !isFuture ? 'NOT DUE' : null),
-                hasNote ? 'HAS A NOTE' : null,
+                isDone ? v.wall.marked : isShielded ? v.notice.shieldSpent : (!isScheduled && !isBeforeStart && !isFuture ? 'NOT DUE' : null),
+                hasNote ? v.day.hasNote : null,
               ].filter(Boolean).join(' — '))}
               onMouseMove={onMoveTooltip}
               onMouseLeave={onHideTooltip}

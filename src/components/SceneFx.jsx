@@ -161,7 +161,9 @@ function SceneFx({ scene, streak = 0 }) {
 
   return (
     <motion.div
-      className={`fx-layer${hidden ? ' fx-paused' : ''}`}
+      // fx-fluid swaps the stop-start waypoint motion for continuous paths;
+      // the hand-tuned medieval night keeps its original motion untouched.
+      className={`fx-layer${hidden ? ' fx-paused' : ''}${isFixedScene(key, scene.theme) ? '' : ' fx-fluid'}`}
       data-scene={key}
       aria-hidden="true"
       initial={{ opacity: 0 }}
@@ -225,7 +227,7 @@ function SceneFx({ scene, streak = 0 }) {
       ))}
 
       {take(place.embers, budget).map((it, i) => (
-        <span key={`e${i}`} className="fx-ember fx-step-3"
+        <span key={`e${i}`} className={`fx-ember fx-step-3${it.rise < 0 ? ' fx-fall' : ''}`}
           style={{ ...strip(it.k, it.w), ...spot(it, stripAspect(it.k)),
             '--dur': `${it.dur}s`, '--delay': `${it.delay}s`, '--rise': cq(it.rise) }} />
       ))}

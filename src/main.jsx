@@ -6,6 +6,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import App from './App.jsx';
 import './index.css';
 import './environment.css';
+import './themes/neon.css';   // scoped to [data-theme="neon"]; see App
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

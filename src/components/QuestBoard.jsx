@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Tray from './Tray';
 import { questSummary } from '../domain/quests';
 import { isMeasuredType } from '../domain/completion';
+import { useVoice } from '../hooks/useVoice';
 
 // The day's quests, on the same wooden board the routine list always used.
 //
@@ -10,6 +11,7 @@ import { isMeasuredType } from '../domain/completion';
 // would mean you couldn't look at a habit without also ticking it.
 
 function QuestRow({ entry, active, onAdvance, onSelect, onEdit, onDelete, canDelete }) {
+  const v = useVoice();
   const { habit, progress, due } = entry;
   const measured = isMeasuredType(habit.type);
 
@@ -45,14 +47,14 @@ function QuestRow({ entry, active, onAdvance, onSelect, onEdit, onDelete, canDel
       <button type="button" className="quest-name" onClick={() => onSelect(habit.id)}>
         <span className="quest-name-text">{habit.name}</span>
         <span className="quest-meta">
-          {due ? (measured ? progress.text : (progress.complete ? 'DONE' : 'NOT DONE')) : entry.schedule}
+          {due ? (measured ? progress.text : (progress.complete ? v.quest.done : v.quest.notDone)) : entry.schedule}
         </span>
       </button>
 
       <button
         type="button"
         className="routine-edit-btn"
-        title="Edit quest"
+        title={v.quest.edit}
         aria-label={`Edit ${habit.name}`}
         onClick={(e) => { e.stopPropagation(); onEdit(habit); }}
       >
@@ -63,7 +65,7 @@ function QuestRow({ entry, active, onAdvance, onSelect, onEdit, onDelete, canDel
         <button
           type="button"
           className="routine-delete-btn"
-          title="Retire quest"
+          title={v.quest.retire}
           aria-label={`Retire ${habit.name}`}
           onClick={(e) => { e.stopPropagation(); onDelete(habit); }}
         >
@@ -75,14 +77,15 @@ function QuestRow({ entry, active, onAdvance, onSelect, onEdit, onDelete, canDel
 }
 
 export default function QuestBoard({ board, activeId, onAdvance, onSelect, onEdit, onDelete }) {
+  const v = useVoice();
   const canDelete = board.due.length + board.later.length > 1;
-  const summary = questSummary(board);
+  const summary = questSummary(board, v.quest.summary);
 
   return (
     <Tray
       area="quests"
       className="quest-board"
-      label={<>TODAY&rsquo;S QUEST</>}
+      label={v.quest.board}
       count={`${board.doneCount}/${board.total}`}
     >
       <ul className="quest-list">
@@ -108,7 +111,7 @@ export default function QuestBoard({ board, activeId, onAdvance, onSelect, onEdi
 
       {board.later.length > 0 && (
         <>
-          <div className="quest-later-label">NOT DUE TODAY</div>
+          <div className="quest-later-label">{v.quest.later}</div>
           <ul className="quest-list later">
             <AnimatePresence initial={false}>
               {board.later.map((entry) => (

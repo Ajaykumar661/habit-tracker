@@ -560,10 +560,13 @@ NEON_FRAMES = {
         'glow_spots': [(118, 262, 150), (1289, 139, 150), (320, 229, 60), (1586, 430, 130)],
         'bird_zone': (470, 150, 1200, 226),
         'bat_zone': (470, 150, 1200, 226),
-        'cat': (440, 200),
-        # asleep on a bracket at the top-left corner of the wall frame: on a
-        # desktop that is clear of both side panels and the action box
-        'cat_sprite': (440, 250, 104),
+        'cat': (431, 400),
+        # Asleep on a bracket on the frame's left pillar, beside the wall and
+        # above the neon strip. The top of the frame looked the obvious spot
+        # but a browser window is shorter than the screen, the room crops at
+        # the top, and the top bar covered her (82% at 1280x720). The frame
+        # is the only band clear of both side panels at every window size.
+        'cat_sprite': (431, 440, 66),
         'scale': 1.0,
     },
     'portrait': {

@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import PixelIcon from './PixelIcon';
+import { useVoice } from '../hooks/useVoice';
 
 export default function AchievementPopup({ achievement }) {
+  const v = useVoice();
   return (
     <AnimatePresence>
       {achievement && (
@@ -18,7 +20,7 @@ export default function AchievementPopup({ achievement }) {
             animate={{ scale: [1, 1.06, 1] }}
             transition={{ duration: 1.4, repeat: 1, repeatType: 'reverse' }}
           >
-            <div className="achievement-popup-label">ACHIEVEMENT UNLOCKED</div>
+            <div className="achievement-popup-label">{v.achievements.unlocked}</div>
             <motion.div
               className="achievement-icon-slot"
               initial={{ rotate: -20, scale: 0 }}
@@ -27,7 +29,7 @@ export default function AchievementPopup({ achievement }) {
             >
               <PixelIcon icon={achievement.icon} />
             </motion.div>
-            <div className="achievement-popup-title">{achievement.code}</div>
+            <div className="achievement-popup-title">{v.achievements.names[`streak-${achievement.days}`]?.title || achievement.code}</div>
             <div className="achievement-popup-days">{achievement.days} DAYS</div>
           </motion.div>
         </motion.div>

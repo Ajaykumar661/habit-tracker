@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TallyGroup from './TallyGroup';
 import { chunk5 } from '../domain/streaks';
 import { formatDateLabel } from '../lib/dates';
+import { useVoice } from '../hooks/useVoice';
 
 const MIN_FADE = 0.55;
 const FADE_STEP = 0.09;
 
 export default function TallyWall({ stats, jailControls, freshDate, onOpenGroup, onTooltip, onMoveTooltip, onHideTooltip }) {
+  const v = useVoice();
   const activeDates = stats.currentSegment ? stats.currentSegment.dates : [];
   const groups = chunk5(activeDates);
   const prevSegs = stats.prevSegments.slice(-4);
@@ -20,7 +22,7 @@ export default function TallyWall({ stats, jailControls, freshDate, onOpenGroup,
     if (el) el.scrollTop = el.scrollHeight;
   }, [activeDates.length]);
 
-  const groupLabel = (dates) => `${dates.length} TALLIES: ${formatDateLabel(dates[0])} – ${formatDateLabel(dates[dates.length - 1])}`;
+  const groupLabel = (dates) => `${dates.length} ${v.wall.many}: ${formatDateLabel(dates[0])} – ${formatDateLabel(dates[dates.length - 1])}`;
 
   return (
     <motion.div className="jail-frame" animate={jailControls}>
@@ -46,8 +48,8 @@ export default function TallyWall({ stats, jailControls, freshDate, onOpenGroup,
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <div className="wall-empty-title">YOUR WALL IS EMPTY</div>
-              <div className="wall-empty-sub">FIRST TALLY AWAITS</div>
+              <div className="wall-empty-title">{v.wall.emptyTitle}</div>
+              <div className="wall-empty-sub">{v.wall.emptySub}</div>
             </motion.div>
           ) : (
             <AnimatePresence initial={false}>

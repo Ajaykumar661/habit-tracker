@@ -1,17 +1,20 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
+import { titleForLevel } from '../domain/xp';
+import { useVoice } from '../hooks/useVoice';
 
 // The RPG layer, as a small brass plaque in the ledger — not a profile page.
 // Title and level lead; the XP bar is a thin carved channel beneath, because
 // the number matters less than the sense of rank.
 function LevelPlaque({ progression }) {
+  const v = useVoice();
   if (!progression) return null;
-  const { title, level, xp, xpIntoLevel, xpForNextLevel, progressPct, perfectDayCount } = progression;
+  const { level, xp, xpIntoLevel, xpForNextLevel, progressPct, perfectDayCount } = progression;
 
   return (
     <div className="level-plaque" data-area="level">
       <div className="level-plaque-head">
-        <span className="level-title">{title}</span>
+        <span className="level-title">{titleForLevel(level, v.level.titles)}</span>
         <span className="level-number">LV {level}</span>
       </div>
 
@@ -33,9 +36,9 @@ function LevelPlaque({ progression }) {
 
       <div className="level-plaque-foot">
         <span>{xpIntoLevel.toLocaleString()} / {xpForNextLevel.toLocaleString()} XP</span>
-        {perfectDayCount > 0 && <span className="level-perfect">{perfectDayCount} PERFECT</span>}
+        {perfectDayCount > 0 && <span className="level-perfect">{perfectDayCount} {v.level.perfect}</span>}
       </div>
-      <div className="level-total">{xp.toLocaleString()} XP EARNED</div>
+      <div className="level-total">{xp.toLocaleString()} {v.level.earned}</div>
     </div>
   );
 }

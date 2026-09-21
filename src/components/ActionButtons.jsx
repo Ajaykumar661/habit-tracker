@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from 'framer-motion';
 import { forwardRef, useEffect, useRef } from 'react';
 import { progressOf, stepFor, isMeasuredType, formatDuration, SECONDS_PER_MINUTE } from '../domain/completion';
+import { useVoice } from '../hooks/useVoice';
 
 const MarkButton = forwardRef(function MarkButton({ doneToday, onClick, label }, ref) {
   const controls = useAnimation();
@@ -96,6 +97,7 @@ function ProgressCounter({ routine, record, onAdd, markBtnRef }) {
 }
 
 export default function ActionButtons({ routine, record, doneToday, onMarkToday, onAddProgress, onUndo, markBtnRef }) {
+  const v = useVoice();
   const measured = isMeasuredType(routine?.type);
 
   return (
@@ -113,8 +115,8 @@ export default function ActionButtons({ routine, record, doneToday, onMarkToday,
           doneToday={doneToday}
           onClick={onMarkToday}
           label={doneToday
-            ? { full: 'TODAY COMPLETE', compact: 'COMPLETE' }
-            : { full: '+ MARK TODAY COMPLETE', compact: '+ COMPLETE' }}
+            ? { full: v.action.done, compact: v.action.doneShort }
+            : { full: v.action.mark, compact: v.action.markShort }}
         />
       )}
 
@@ -131,7 +133,7 @@ export default function ActionButtons({ routine, record, doneToday, onMarkToday,
             whileTap={{ scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 500, damping: 24 }}
           >
-            UNDO TALLY
+            {v.action.undo}
           </motion.button>
         )}
       </AnimatePresence>

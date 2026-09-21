@@ -2,6 +2,7 @@ import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import PixelIcon from './PixelIcon';
 import { formatDateLabel } from '../lib/dates';
+import { useVoice } from '../hooks/useVoice';
 
 // One plaque on the wall.
 //
@@ -9,6 +10,7 @@ import { formatDateLabel } from '../lib/dates';
 // visibly filling is the point — a wall of anonymous padlocks tells you
 // nothing. A hidden one keeps its name until it is earned.
 export default function AchievementBadge({ achievement, achievedDate }) {
+  const v = useVoice();
   const { unlocked, hidden, title, desc, pct, progressText } = achievement;
   const controls = useAnimation();
   const reducedMotion = useReducedMotion();
@@ -23,7 +25,7 @@ export default function AchievementBadge({ achievement, achievedDate }) {
 
   const secret = hidden && !unlocked;
   const name = secret ? '???' : title;
-  const blurb = secret ? 'A SECRET DEED' : desc;
+  const blurb = secret ? v.achievements.secret : desc;
 
   return (
     <motion.div
@@ -43,7 +45,7 @@ export default function AchievementBadge({ achievement, achievedDate }) {
         {unlocked && achievedDate ? (
           <span className="achievement-date">{formatDateLabel(achievedDate)}</span>
         ) : (
-          <span className="achievement-days">{unlocked ? 'EARNED' : progressText}</span>
+          <span className="achievement-days">{unlocked ? v.achievements.earned : progressText}</span>
         )}
         {!unlocked && (
           <span className="achievement-bar" aria-hidden="true">
