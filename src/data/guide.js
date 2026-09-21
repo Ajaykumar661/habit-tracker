@@ -115,7 +115,7 @@ export const GUIDE_PAGES = [
     points: [
       'No account, no server, no tracking. It works with no connection at all.',
       'That also means nobody else holds a copy — so use EXPORT in settings and keep the file somewhere safe.',
-      'The gear icon holds sound, music, the backup tools, and when your day turns over if you keep late hours.',
+      'The gear holds sound, music, backups, your choice of world — keep or neon city — and when your day turns over.',
       'You can reopen this guide from settings whenever you like.',
     ],
   },

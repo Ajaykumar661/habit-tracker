@@ -1,6 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import fx from '../data/sceneFx.json';
 
 // Animated layer over the flattened room art: lantern flames, weather, and
 // whatever is awake at this time of day. Every sprite is cut from the two
@@ -58,19 +57,22 @@ function mulberry32(seed) {
 // against a mask that guarantees nothing is placed over the tally wall, and
 // nudging x or y here would throw that guarantee away.
 //
-// The night scene is excluded: it is already tuned and the request was to
-// leave it exactly as it is.
+// The medieval night is excluded: it was already tuned by hand and the
+// request was to leave it exactly as it is. Every other scene, in every
+// theme, gets re-rolled.
 const PATHS = 3;
 
 /** Scenes whose motion is left exactly as authored. */
-export const isFixedScene = (key) => String(key || '').includes('night');
+export const isFixedScene = (key, theme = 'medieval') => (
+  theme === 'medieval' && String(key || '').includes('night')
+);
 
 /**
  * The motion for a scene: re-rolled, unless the scene is one we leave alone.
  * Exported so the rule can be tested without a browser.
  */
-export function motionFor(key, place, seed) {
-  return isFixedScene(key) ? place : randomiseMotion(place, seed);
+export function motionFor(key, place, seed, theme = 'medieval') {
+  return isFixedScene(key, theme) ? place : randomiseMotion(place, seed);
 }
 
 export function randomiseMotion(place, seed) {
@@ -97,13 +99,16 @@ export function randomiseMotion(place, seed) {
 }
 
 function SceneFx({ scene, streak = 0 }) {
+  // Each theme ships its own sprites and placements under the same names,
+  // so everything below is theme-agnostic.
+  const fx = scene.fx.data;
   const key = scene.fx.key;
   const raw = fx.placements[key];
   // Re-rolled per mount, and per scene, so moving from dawn to day gives a
   // genuinely different arrangement of motion rather than the same one.
   const place = useMemo(
-    () => motionFor(key, raw, (Math.random() * 2 ** 32) >>> 0),
-    [key, raw],
+    () => motionFor(key, raw, (Math.random() * 2 ** 32) >>> 0, scene.theme),
+    [key, raw, scene.theme],
   );
   const hidden = useIsHidden();
   const budget = useMemo(deviceBudget, []);
@@ -206,6 +211,10 @@ function SceneFx({ scene, streak = 0 }) {
       {take(place.fglow, life * budget).map((it, i) => (
         <span key={`g${i}`} className="fx-fglow"
           style={{ ...atlas(it.s, it.w), ...spot(it, atlasAspect(it.s)),
+            // A sign's halo is capped and screened; filter opacity stacks
+            // with the animated `opacity`, so the pulse survives the cap.
+            filter: it.op ? `opacity(${it.op})` : undefined,
+            mixBlendMode: it.blend,
             '--blink': `${it.blink}s`, '--delay': `${it.delay}s` }} />
       ))}
 

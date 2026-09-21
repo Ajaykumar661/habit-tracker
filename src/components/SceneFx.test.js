@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { motionFor, randomiseMotion, isFixedScene } from './SceneFx';
-import fx from '../data/sceneFx.json';
+import fx from '../data/themes/medieval/sceneFx.json';
+import neonFx from '../data/themes/neon/sceneFx.json';
 
 const SEED_A = 12345;
 const SEED_B = 98765;
@@ -10,7 +11,7 @@ const SEED_B = 98765;
 const dawn = fx.placements['portrait-dawn'];
 
 describe('which scenes get re-rolled', () => {
-  it('leaves the night scenes exactly as authored', () => {
+  it('leaves the medieval night scenes exactly as authored', () => {
     for (const key of ['landscape-night', 'portrait-night']) {
       expect(isFixedScene(key), key).toBe(true);
       expect(motionFor(key, dawn, SEED_A)).toBe(dawn);   // the same object
@@ -26,6 +27,62 @@ describe('which scenes get re-rolled', () => {
 
   it('survives a missing key', () => {
     expect(isFixedScene(undefined)).toBe(false);
+  });
+
+  it('re-rolls the neon night too -- only the hand-tuned medieval night is fixed', () => {
+    const neonNight = neonFx.placements['landscape-night'];
+    expect(isFixedScene('landscape-night', 'neon')).toBe(false);
+    expect(motionFor('landscape-night', neonNight, SEED_A, 'neon')).not.toBe(neonNight);
+  });
+});
+
+describe('every theme ships the same sprite names', () => {
+  // SceneFx has no per-theme code: it asks for 'flame-night' or 'mote-2' and
+  // trusts the theme to have drawn one. This is where that trust is checked.
+  const themes = { medieval: fx, neon: neonFx };
+
+  it('provides every strip the medieval keep does', () => {
+    for (const [name, data] of Object.entries(themes)) {
+      expect(Object.keys(data.strips).sort(), name).toEqual(Object.keys(fx.strips).sort());
+    }
+  });
+
+  it('has a placement set for every scene it claims', () => {
+    for (const key of ['landscape-dawn', 'landscape-day', 'landscape-dusk', 'landscape-night',
+      'portrait-dawn', 'portrait-day', 'portrait-dusk', 'portrait-night']) {
+      expect(neonFx.placements[key], key).toBeDefined();
+    }
+  });
+
+  it('only ever places sprites that exist', () => {
+    for (const [name, data] of Object.entries(themes)) {
+      for (const [scene, layers] of Object.entries(data.placements)) {
+        for (const [layer, items] of Object.entries(layers)) {
+          for (const it of items) {
+            if (it.s) expect(data.static.rects[it.s], `${name}/${scene}/${layer}: ${it.s}`).toBeDefined();
+            if (it.k && layer !== 'stars') {
+              expect(data.strips[it.k], `${name}/${scene}/${layer}: ${it.k}`).toBeDefined();
+            }
+            if (layer === 'stars') expect(data.strips[`star-${it.k}`], `${name}/${scene}`).toBeDefined();
+          }
+        }
+      }
+    }
+  });
+
+  it('points every sprite at its own theme folder', () => {
+    for (const [name, data] of Object.entries(themes)) {
+      for (const strip of Object.values(data.strips)) {
+        expect(strip.src.startsWith(`/assets/themes/${name}/fx/`), strip.src).toBe(true);
+      }
+      expect(data.static.src).toBe(`/assets/themes/${name}/fx/static.png`);
+    }
+  });
+
+  it('drops neon sparks rather than lifting them', () => {
+    const embers = neonFx.placements['landscape-night'].embers;
+    expect(embers.length).toBeGreaterThan(0);
+    for (const e of embers) expect(e.rise).toBeLessThan(0);
   });
 });
 

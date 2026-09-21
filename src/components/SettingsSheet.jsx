@@ -4,6 +4,7 @@ import { IconSpeaker } from './icons';
 import { exportBackup, parseBackup, restoreBackup } from '../lib/backup';
 import { MIN_CUTOFF_HOUR, MAX_CUTOFF_HOUR, formatDateLabel } from '../lib/dates';
 import { backupStatus } from '../domain/upkeep';
+import { THEMES } from '../data/themes';
 import { Music } from '../lib/music';
 import { SoundFX } from '../lib/sound';
 
@@ -119,6 +120,27 @@ export default function SettingsSheet({
           />
         </label>
       )}
+
+      <div className="settings-section">
+        <div className="settings-label">WORLD</div>
+        <div className="cutoff-row" role="radiogroup" aria-label="Theme">
+          {Object.values(THEMES).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={(settings?.theme || 'medieval') === t.id}
+              className={`choice-btn${(settings?.theme || 'medieval') === t.id ? ' active' : ''}`}
+              onClick={() => onSetSetting('theme', t.id)}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+        <p className="settings-note-quiet">
+          The room, its creatures and its music change. Your record does not.
+        </p>
+      </div>
 
       <div className="settings-row">
         <span>THE GUIDE</span>

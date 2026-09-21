@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { wallSurface, sceneFor } from '../data/assets';
+import { sceneFor, themeFor } from '../data/themes';
 import { useSceneLayout, useIsNarrowViewport } from '../hooks/useSceneLayout';
 import BottomTabBar from './BottomTabBar';
 import SceneFx from './SceneFx';
@@ -13,13 +13,15 @@ import SceneFx from './SceneFx';
 // `drawer`/`setDrawer` ('routines' | 'record' | null) are lifted to App so
 // the Android hardware back button can close whichever is open (see
 // App.jsx's backButton listener) without GameView knowing about Capacitor.
-export default function GameView({ envState, streak, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
+export default function GameView({ envState, theme, streak, shake, topBar, title, wall, left, right, bottom, drawer, setDrawer, onOpenCalendar }) {
   // Below the breakpoint, swap to the portrait room (archway sits above the
   // wall there, so its own cover-scaled crop keeps the sky in frame — see
-  // scenesMobile in data/assets.js). Picked here, before useSceneLayout,
-  // since that hook's wall-centring math needs the right frame's own regions.
+  // each theme's portrait set in data/themes). Picked here, before
+  // useSceneLayout, since that hook's wall-centring math needs the right
+  // frame's own regions -- which differ between themes as well.
   const narrowArt = useIsNarrowViewport();
-  const scene = sceneFor(envState, narrowArt);
+  const scene = sceneFor(envState, narrowArt, theme);
+  const { wall: wallArt, id: themeId } = themeFor(theme);
   const { layout, bottomRef } = useSceneLayout(scene);
   const { canvas, collapsed, hudWidth, bottomTop, bottomCenter, bottomMaxWidth, wallInset } = layout;
 
@@ -44,12 +46,13 @@ export default function GameView({ envState, streak, shake, topBar, title, wall,
     <div
       className="game-view"
       data-lighting={scene.lighting}
+      data-theme={themeId}
       style={{ '--hud-w': `${hudWidth}px`, '--wall-inset-l': `${wallInset.left}px`, '--wall-inset-r': `${wallInset.right}px` }}
     >
       <motion.div className="game-shake" animate={shake}>
         <div
           className="scene-canvas"
-          style={{ ...canvas, '--wall-surface': `url('${wallSurface.src}')` }}
+          style={{ ...canvas, '--wall-surface': `url('${wallArt.src}')`, '--wall-tile': wallArt.tile }}
         >
           <div className="scene-wall" style={box(scene.regions.wall)}>{wall}</div>
           <AnimatePresence initial={false}>

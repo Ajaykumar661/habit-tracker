@@ -13,6 +13,7 @@ import Achievements from './components/Achievements';
 import KingdomReport from './components/KingdomReport';
 import RallyStrip from './components/RallyStrip';
 import { getRecovery } from './domain/recovery';
+import { musicFor } from './data/themes';
 import Tooltip from './components/Tooltip';
 import ConfirmModal from './components/ConfirmModal';
 import AddRoutineModal from './components/AddRoutineModal';
@@ -136,7 +137,8 @@ export default function App() {
   // Background music follows the time of day. It can only actually start
   // from a user gesture (every browser blocks audio before that), so the
   // first interaction arms it and whatever is `wanted` begins then.
-  useEffect(() => { Music.playFor(envState); }, [envState]);
+  const theme = settings?.theme;
+  useEffect(() => { Music.playFor(musicFor(envState, theme)); }, [envState, theme]);
 
   useEffect(() => {
     // Not `once`: a browser may refuse the first gesture, and giving up
@@ -424,6 +426,7 @@ export default function App() {
       {/* GAME VIEW — fixed, full-viewport room with the HUD around it */}
       <GameView
         envState={envState}
+        theme={theme}
         streak={stats.currentStreak}
         shake={appControls}
         drawer={drawer}
