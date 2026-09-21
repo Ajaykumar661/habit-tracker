@@ -9,16 +9,12 @@
 // does nothing, rather than pretending.
 
 import { Capacitor } from '@capacitor/core';
+import { LocalNotifications as LN } from '@capacitor/local-notifications';
 
 const CHANNEL = 'daily-reminder';
 
 export function remindersAvailable() {
   return Capacitor.isNativePlatform();
-}
-
-async function plugin() {
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
-  return LocalNotifications;
 }
 
 /**
@@ -28,14 +24,13 @@ async function plugin() {
  */
 export async function requestReminderPermission() {
   if (!remindersAvailable()) return false;
-  const LN = await plugin();
   let { display } = await LN.checkPermissions();
   if (display !== 'granted') ({ display } = await LN.requestPermissions());
   return display === 'granted';
 }
 
 let channelReady = false;
-async function ensureChannel(LN) {
+async function ensureChannel() {
   if (channelReady || Capacitor.getPlatform() !== 'android') return;
   // Default importance: a sound and a place in the shade, no pop-over banner.
   await LN.createChannel({ id: CHANNEL, name: 'Daily reminder', description: 'One gentle reminder a day, only when something is still open.', importance: 3 });
@@ -45,7 +40,6 @@ async function ensureChannel(LN) {
 /** Replace whatever is pending with `plan`. An empty plan clears everything. */
 export async function syncReminders(plan) {
   if (!remindersAvailable()) return;
-  const LN = await plugin();
   const { notifications: pending } = await LN.getPending();
   if (pending.length) await LN.cancel({ notifications: pending.map((n) => ({ id: n.id })) });
   if (!plan.length) return;
@@ -55,13 +49,16 @@ export async function syncReminders(plan) {
   const { display } = await LN.checkPermissions();
   if (display !== 'granted') return;
 
-  await ensureChannel(LN);
+  await ensureChannel();
   await LN.schedule({
     notifications: plan.map((r) => ({
       id: r.id,
       title: r.title,
       body: r.body,
       schedule: { at: r.at },
+      // A daily nudge may land a few minutes late. Asking for exact alarms
+      // would send the user to a system settings page, for nothing.
+      isExactNotification: false,
       channelId: CHANNEL,
       smallIcon: 'ic_stat_tally',
       iconColor: '#E0A458',

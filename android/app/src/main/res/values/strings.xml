@@ -4,4 +4,5 @@
     <string name="title_activity_main">Tally Wall</string>
     <string name="package_name">com.tallywall.app</string>
     <string name="custom_url_scheme">com.tallywall.app</string>
+    <string name="widget_description">Your streak and the tally for today, at a glance.</string>
 </resources>

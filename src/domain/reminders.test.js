@@ -71,10 +71,48 @@ describe('what a reminder says', () => {
   });
 
   it('speaks in the theme it is handed', () => {
-    const words = { title: 'NEON', one: (n) => `${n} pending`, many: (n) => `${n} pending` };
+    const words = { title: 'NEON', one: (n) => `${n} pending`, start: () => '', partway: () => '', many: (n) => `${n} pending` };
     const [r] = planReminders({ habits: [daily], completions: {}, settings: on, now: NOW, words });
     expect(r.title).toBe('NEON');
     expect(r.body).toBe('READ pending');
+  });
+});
+
+describe('reminders speak to the routine, not a template', () => {
+  const water = createHabit({ id: 'water', name: 'WATER', type: 'count', target: 8, unit: 'glasses', startDate: '2026-09-01' });
+  const readMins = createHabit({ id: 'readm', name: 'READING', type: 'duration', target: 1800, startDate: '2026-09-01' });
+  const sips = (value) => ({ water: { '2026-09-21': { id: 'c', habitId: 'water', date: '2026-09-21', completed: false, value } } });
+
+  it('says how far a count has come, in its own unit', () => {
+    const [r] = planReminders({ habits: [water], completions: sips(3), settings: on, now: NOW });
+    expect(r.body).toBe('WATER: 3 of 8 glasses so far. 5 glasses more and the mark is yours.');
+  });
+
+  it('names the whole target when nothing is logged yet', () => {
+    const [r] = planReminders({ habits: [water], completions: {}, settings: on, now: NOW });
+    expect(r.body).toContain('8 glasses');
+    expect(r.body).not.toMatch(/quest/i);
+  });
+
+  it('talks about time in minutes', () => {
+    const [r] = planReminders({ habits: [readMins], completions: {}, settings: on, now: NOW });
+    expect(r.body).toContain('30 MIN');
+  });
+
+  it('shows progress beside each name when several are open', () => {
+    const [r] = planReminders({ habits: [water, daily], completions: sips(3), settings: on, now: NOW });
+    expect(r.body).toBe('2 quests still open: WATER (3/8), READ.');
+  });
+
+  it('keeps a long list short', () => {
+    const many = ['A', 'B', 'C', 'D', 'E'].map((n) => createHabit({ id: n, name: n, startDate: '2026-09-01' }));
+    const [r] = planReminders({ habits: many, completions: {}, settings: on, now: NOW });
+    expect(r.body).toBe('5 quests still open: A, B, C +2 more.');
+  });
+
+  it('describes tomorrow as a fresh start', () => {
+    const plan = planReminders({ habits: [water], completions: sips(3), settings: on, now: NOW });
+    expect(plan[1].body).toContain('8 glasses today');
   });
 });
 

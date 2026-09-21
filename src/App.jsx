@@ -33,6 +33,7 @@ import LevelPlaque from './components/LevelPlaque';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
 import { useReminders } from './hooks/useReminders';
+import { useWidget } from './hooks/useWidget';
 import { SoundFX } from './lib/sound';
 import { Music } from './lib/music';
 import { pickQuote } from './data/quotes';
@@ -77,6 +78,10 @@ export default function App() {
   // provider reads them through useVoice().
   const voice = voiceFor(settings?.theme);
   useReminders({ habits, completions, settings, words: voice.remind.words });
+  useWidget({
+    habits, completions, activeRoutine, streak: stats.currentStreak, today,
+    theme: settings?.theme, cutoffHour: settings?.dayCutoffHour ?? 0, words: voice.widget,
+  });
   const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }, voice.quotes));
 
   const markBtnRef = useRef(null);

@@ -49,9 +49,55 @@ export function reminderIdFor(dateStr) {
 /** The medieval wording; a theme passes its own. */
 export const REMIND_WORDS = {
   title: 'TALLY WALL',
+  // a yes-or-no routine
   one: (name) => `${name} still waits for today’s mark.`,
-  many: (n) => `${n} quests still wait for today’s mark.`,
+  // a measured routine not yet started, and one partway there
+  start: ({ name, target }) => `${name}: ${target} today. The first is the hardest.`,
+  partway: ({ name, done, target, left }) => `${name}: ${done} of ${target} so far. ${left} more and the mark is yours.`,
+  // several still open, named
+  many: (n, list) => `${n} quests still open: ${list}.`,
 };
+
+/** Names shown in a "many" reminder before it says "+N more". */
+const LIST_MAX = 3;
+
+/**
+ * An amount in the routine's own terms: "5 glasses", "20 MIN", "3".
+ * Duration is stored in seconds but nobody thinks of reading in seconds.
+ */
+function amount(habit, n, withUnit = true) {
+  if (habit.type === 'duration') return `${Math.max(1, Math.round(n / 60))} MIN`;
+  return withUnit && habit.unit ? `${n} ${habit.unit}` : `${n}`;
+}
+
+/**
+ * What a reminder says, from the entries still open. Specific to the
+ * user's own routines: a measured one says how far along it is, so a
+ * water tracker hears about glasses, not about "a quest".
+ */
+export function reminderBody(open, words = REMIND_WORDS) {
+  if (open.length === 1) {
+    const { habit, progress } = open[0];
+    if (habit.type === 'boolean') return words.one(habit.name);
+    const { value, target } = progress;
+    if (value > 0) {
+      return words.partway({
+        name: habit.name,
+        done: amount(habit, value, false),
+        target: amount(habit, target),
+        left: amount(habit, target - value),
+      });
+    }
+    return words.start({ name: habit.name, target: amount(habit, target) });
+  }
+  const named = open.slice(0, LIST_MAX).map(({ habit, progress }) => (
+    habit.type !== 'boolean' && progress.value > 0
+      ? `${habit.name} (${amount(habit, progress.value, false)}/${amount(habit, progress.target, false)})`
+      : habit.name
+  ));
+  const extra = open.length - named.length;
+  return words.many(open.length, extra > 0 ? `${named.join(', ')} +${extra} more` : named.join(', '));
+}
 
 /**
  * What to schedule, as of `now`.
@@ -80,7 +126,7 @@ export function planReminders({ habits, completions, settings, now = new Date(),
       date,
       at,
       title: words.title,
-      body: open.length === 1 ? words.one(open[0].habit.name) : words.many(open.length),
+      body: reminderBody(open, words),
     });
   }
   return plan;

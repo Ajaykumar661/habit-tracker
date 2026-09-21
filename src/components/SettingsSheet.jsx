@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ModalOverlay from './ModalOverlay';
 import { IconSpeaker } from './icons';
 import { exportBackup, parseBackup, restoreBackup } from '../lib/backup';
@@ -10,6 +10,7 @@ import { SoundFX } from '../lib/sound';
 import { useVoice } from '../hooks/useVoice';
 import { REMINDER_TIMES, formatReminderTime, reminderTimeOf } from '../domain/reminders';
 import { remindersAvailable, requestReminderPermission } from '../lib/reminders';
+import { canPinWidget, pinWidget } from '../lib/widget';
 
 const HOURS = Array.from(
   { length: MAX_CUTOFF_HOUR - MIN_CUTOFF_HOUR + 1 },
@@ -53,6 +54,8 @@ export default function SettingsSheet({
   const [musicVol, setMusicVol] = useState(() => Music.getVolume());
   const [sfxVol, setSfxVol] = useState(() => SoundFX.getVolume());
   const [remindNote, setRemindNote] = useState(null);
+  const [canPin, setCanPin] = useState(false);
+  useEffect(() => { if (open) canPinWidget().then(setCanPin); }, [open]);
   const cutoff = settings?.dayCutoffHour ?? 0;
   const backup = backupStatus(habits, settings);
 
@@ -81,7 +84,8 @@ export default function SettingsSheet({
   async function toggleReminder() {
     if (settings?.reminderOn) { onSetSetting('reminderOn', false); return; }
     // Permission is asked here, on the user's own tap -- never on launch.
-    if (await requestReminderPermission()) {
+    // A failed request counts as a no, never as an unhandled error.
+    if (await requestReminderPermission().catch(() => false)) {
       setRemindNote(null);
       onSetSetting('reminderOn', true);
     } else {
@@ -180,6 +184,15 @@ export default function SettingsSheet({
         )}
         {remindNote && <p className="settings-note err">{remindNote}</p>}
       </div>
+
+      {canPin && (
+        <div className="settings-row">
+          <span>HOME SCREEN WIDGET</span>
+          <button type="button" className="pixel-btn pixel-btn-small" onClick={() => pinWidget().catch(() => setCanPin(false))}>
+            ADD
+          </button>
+        </div>
+      )}
 
       <div className="settings-section">
         <div className="settings-label">WORLD</div>

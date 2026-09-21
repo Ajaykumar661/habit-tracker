@@ -140,9 +140,13 @@ const medieval = {
     words: {
       title: 'TALLY WALL',
       one: (name) => `${name} still waits for today’s mark.`,
-      many: (n) => `${n} quests still wait for today’s mark.`,
+      start: ({ name, target }) => `${name}: ${target} today. The first is the hardest.`,
+      partway: ({ name, done, target, left }) => `${name}: ${done} of ${target} so far. ${left} more and the mark is yours.`,
+      many: (n, list) => `${n} quests still open: ${list}.`,
     },
   },
+
+  widget: { day: 'DAY', done: 'DONE', allDone: 'ALL DONE', rest: 'A DAY OF REST', stale: 'OPEN THE WALL' },
 
   day: {
     chronicle: 'THE CHRONICLE',
@@ -346,9 +350,13 @@ const neon = {
     words: {
       title: 'TALLY WALL',
       one: (name) => `${name} is still pending today.`,
-      many: (n) => `${n} missions still pending today.`,
+      start: ({ name, target }) => `${name}: 0 of ${target} logged. Boot it up.`,
+      partway: ({ name, done, target, left }) => `${name}: ${done} of ${target} logged. ${left} left to clear it.`,
+      many: (n, list) => `${n} missions pending: ${list}.`,
     },
   },
+
+  widget: { day: 'DAY', done: 'LOGGED', allDone: 'ALL CLEAR', rest: 'NO MISSIONS', stale: 'RECONNECT' },
 
   day: {
     chronicle: 'THE LOGBOOK',
