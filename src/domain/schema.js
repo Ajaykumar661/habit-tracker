@@ -33,7 +33,11 @@ export const DEFAULT_SETTINGS = {
   // The best milestone day whose room object has been announced, so each
   // newly earned object is pointed out once (components/RoomExtras.jsx).
   roomSeen: 0,
+  // How large the interface text is drawn: 'normal' or 'large'.
+  textSize: 'normal',
 };
+
+export const TEXT_SIZES = ['normal', 'large'];
 
 const REMINDER_TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -210,6 +214,7 @@ export function normalizeState(state) {
       theme: THEME_IDS.includes(state.settings?.theme) ? state.settings.theme : DEFAULT_THEME,
       // A reminder must never switch itself on from a hand-edited file.
       reminderOn: state.settings?.reminderOn === true,
+      textSize: TEXT_SIZES.includes(state.settings?.textSize) ? state.settings.textSize : 'normal',
       reminderTime: REMINDER_TIME_RE.test(state.settings?.reminderTime) ? state.settings.reminderTime : DEFAULT_SETTINGS.reminderTime,
     },
   };

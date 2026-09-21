@@ -181,6 +181,11 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme || 'medieval';
   }, [theme]);
+  // Larger interface text, for anyone the pixel font is too small for.
+  const textSize = settings?.textSize === 'large' ? 'large' : 'normal';
+  useEffect(() => {
+    document.documentElement.dataset.text = textSize;
+  }, [textSize]);
 
   useEffect(() => {
     // Not `once`: a browser may refuse the first gesture, and giving up

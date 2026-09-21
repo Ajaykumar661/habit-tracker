@@ -61,57 +61,65 @@ SHEETS = {
         'decorations': 'neon_6_season_decorations.png',
     },
 }
-# Where each milestone object stands, per room orientation, in the room
-# image's own pixels: x = centre, y = the line it stands on (its bottom),
-# w = drawn width. Chosen on previews (--preview) so each object sits on a
-# real surface and clear of the HUD: portrait rooms line them up on the shelf
-# above the wall -- the one strip a phone never covers.
-SPOTS = {
+# The trophy shelf. Every milestone object has a fixed slot, earned or not
+# (unearned ones show as silhouettes), laid out left to right in day order
+# across the rows below. Each row: y = the line objects stand on, x0..x1 =
+# its extent, h = the tallest an object may be, n = slots. `plank` rows get
+# a wooden plank drawn under them; others stand on a surface already in the
+# art (the lintel, the top of a wall). Every object is fitted into its slot
+# at the same height, so the row reads as one collection.
+SHELVES = {
     'medieval': {
-        'landscape': {
-            # the stool is the live cat's (build-scene-fx.py), so the herb
-            # shares the chest with the goblet
-            'candle': (196, 634, 40), 'herb': (170, 772, 56), 'goblet': (102, 772, 56),
-            'banner': (388, 610, 76), 'crown': (250, 858, 84), 'armour': (452, 805, 92),
-        },
-        'portrait': {
-            # the routine's name plaque hangs on this lintel and grows with the
-            # name, so the objects pack into the left end -- the tall armour
-            # last, where it still shows over a long name -- and the season's
-            # piece has the gap by the cat at the right
-            'candle': (230, 440, 32), 'herb': (266, 440, 38), 'goblet': (302, 440, 38),
-            'crown': (346, 440, 50), 'armour': (398, 440, 54), 'banner': (150, 1030, 72),
-        },
+        # hung inside the archway, above the lintel the cat sleeps on
+        'portrait': [{'y': 336, 'x0': 266, 'x1': 668, 'h': 96, 'n': 6, 'plank': True}],
+        # two planks on the pillar left of the wall, above the cat's stool
+        'landscape': [
+            {'y': 508, 'x0': 290, 'x1': 470, 'h': 78, 'n': 3, 'plank': True},
+            {'y': 606, 'x0': 290, 'x1': 470, 'h': 80, 'n': 3, 'plank': True},
+        ],
     },
     'neon': {
-        'landscape': {
-            'lavalamp': (450, 233, 30), 'holoplant': (540, 233, 55), 'trophy': (1010, 233, 50),
-            'uptime': (1120, 233, 110), 'hologram': (1220, 233, 60), 'arcade': (330, 745, 70),
-        },
-        'portrait': {
-            # packed toward the left so the season's piece gets its own gap
-            # between the arcade and the cat, well inside a phone's crop
-            'lavalamp': (206, 470, 28), 'holoplant': (254, 470, 46), 'trophy': (304, 470, 42),
-            'hologram': (362, 470, 52), 'uptime': (446, 470, 90), 'arcade': (530, 470, 50),
-        },
+        # the top of the wall is the shelf
+        'portrait': [{'y': 470, 'x0': 186, 'x1': 606, 'h': 100, 'n': 6}],
+        'landscape': [{'y': 233, 'x0': 470, 'x1': 1230, 'h': 84, 'n': 6}],
     },
 }
+
+
+def plank_rgba(width, theme):
+    """A pixel-art wooden plank with iron brackets under each end."""
+    h = 22
+    img = np.zeros((h, width, 4), np.uint8)
+    wood = [(0x2a, 0x18, 0x0c), (0x9a, 0x66, 0x33), (0x7a, 0x4e, 0x26), (0x6a, 0x42, 0x20),
+            (0x6a, 0x42, 0x20), (0x5c, 0x38, 0x1b), (0x5c, 0x38, 0x1b), (0x3e, 0x25, 0x12), (0x2a, 0x18, 0x0c)]
+    for y, c in enumerate(wood):
+        img[y, :, :3] = c
+        img[y, :, 3] = 255
+    for x in range(9, width - 9, 37):           # grain and board joints
+        img[3:7, x, :3] = (0x4a, 0x2d, 0x15)
+    for bx in (18, width - 26):                 # brackets
+        for y in range(9, h):
+            w = max(2, 10 - (y - 9) * 10 // (h - 9))
+            img[y, bx:bx + w, :3] = (0x2c, 0x2a, 0x28)
+            img[y, bx:bx + w, 3] = 255
+            img[y, bx, :3] = (0x55, 0x50, 0x4a)
+    return img
+
 
 # Where each season's decoration goes (x centre, y bottom, w), per
 # orientation. Only one season shows at a time, so they may share a spot.
 # Medieval has none until its decoration sheet exists.
 SEASON_SPOTS = {
-    # On the shelf with the milestone objects, like something set out for
-    # the season: portrait between the arcade and the cat, landscape in the
-    # gap along the top of the wall between the objects.
     'neon': {
         'landscape': {
-            'winter': (780, 233, 190), 'autumn': (780, 233, 72),
-            'spring': (780, 233, 170), 'summer': (780, 233, 36),
+            # the gap on the wall top between the shelf and the right lamp
+            'winter': (1262, 233, 70), 'autumn': (1262, 233, 56),
+            'spring': (1262, 233, 64), 'summer': (1262, 233, 30),
         },
+        # hung on the fire escape right of the shelf
         'portrait': {
-            'winter': (598, 470, 84), 'autumn': (598, 470, 52),
-            'spring': (598, 470, 80), 'summer': (598, 470, 28),
+            'winter': (802, 440, 96), 'autumn': (800, 440, 62),
+            'spring': (800, 440, 90), 'summer': (802, 440, 36),
         },
     },
     'medieval': {
@@ -121,9 +129,10 @@ SEASON_SPOTS = {
             'winter': (1186, 792, 62), 'autumn': (1182, 792, 84),
             'spring': (1182, 792, 80), 'summer': (1188, 792, 44),
         },
+        # the left end of the lintel; the cat has the right
         'portrait': {
-            'winter': (574, 440, 50), 'autumn': (570, 440, 62),
-            'spring': (570, 440, 60), 'summer': (576, 440, 34),
+            'winter': (268, 440, 64), 'autumn': (270, 440, 80),
+            'spring': (270, 440, 78), 'summer': (266, 440, 44),
         },
     },
 }
@@ -217,8 +226,29 @@ def build(theme, preview=False):
         item = {'id': obj, 'day': day, **out.sprite(crop(sheet, box), f'm-{obj}')}
         if obj in flick:
             item['flicker'] = flick[obj]
-        item['spots'] = {o: dict(zip('xyw', SPOTS[theme][o][obj])) for o in SPOTS[theme]}
         manifest['milestones'].append(item)
+
+    # ---- the shelf: a fixed slot for every object, fitted to one height ---
+    manifest['shelves'] = {}
+    for orient, rows in SHELVES[theme].items():
+        slots = []
+        for r in rows:
+            sw = (r['x1'] - r['x0']) / r['n']
+            slots += [(r, r['x0'] + sw * (k + 0.5), sw) for k in range(r['n'])]
+        if len(slots) < len(manifest['milestones']):
+            raise SystemExit(f'{theme}/{orient}: {len(slots)} shelf slots for {len(manifest["milestones"])} objects')
+        for m, (r, cx, sw) in zip(manifest['milestones'], slots):
+            iw, ih = (m['flicker']['cw'], m['flicker']['ch']) if 'flicker' in m else (m['w'], m['h'])
+            w = min(sw * 0.86, r['h'] * iw / ih)
+            m.setdefault('spots', {})[orient] = {'x': round(cx), 'y': r['y'], 'w': round(w)}
+        planks = []
+        for k, r in enumerate(rows):
+            if r.get('plank'):
+                width = r['x1'] - r['x0'] + 16
+                Image.fromarray(plank_rgba(width, theme)).save(out.dir / f'shelf-{orient}-{k}.png')
+                planks.append({'src': f'{out.url}/shelf-{orient}-{k}.png', 'x': r['x0'] - 8, 'y': r['y'] - 2,
+                               'w': width, 'h': 22})
+        manifest['shelves'][orient] = planks
 
     # ---- the cat: her ruler, then everything drawn in her place ------------
     cat_body, cat_cw = scene_cat_body(theme)
@@ -299,13 +329,16 @@ def render_previews(theme, manifest):
     out_dir.mkdir(exist_ok=True)
     for orient, path in rooms.items():
         room = Image.open(path).convert('RGBA')
+        for pl in manifest['shelves'].get(orient, []):
+            img = Image.open(ROOT / 'public' / pl['src'].lstrip('/')).convert('RGBA')
+            room.alpha_composite(img, (pl['x'], pl['y']))
         for m in manifest['milestones']:
             s = m['spots'][orient]
             img = Image.open(ROOT / 'public' / m['src'].lstrip('/')).convert('RGBA')
             h = round(img.height * s['w'] / img.width)
             img = img.resize((s['w'], h), Image.LANCZOS)
             room.alpha_composite(img, (round(s['x'] - s['w'] / 2), round(s['y'] - h)))
-        for season in manifest['seasons'].values():
+        for season in [manifest['seasons'].get('winter', {})]:
             d = season.get('decoration')
             if not d or orient not in d.get('spots', {}):
                 continue

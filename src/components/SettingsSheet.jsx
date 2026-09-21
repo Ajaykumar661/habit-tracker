@@ -195,6 +195,25 @@ export default function SettingsSheet({
       )}
 
       <div className="settings-section">
+        <div className="settings-label">TEXT SIZE</div>
+        <div className="cutoff-row" role="radiogroup" aria-label="Text size">
+          {[['normal', 'NORMAL'], ['large', 'LARGE']].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={(settings?.textSize || 'normal') === id}
+              className={`choice-btn${(settings?.textSize || 'normal') === id ? ' active' : ''}`}
+              onClick={() => onSetSetting('textSize', id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="settings-note-quiet">Makes the panels, buttons and dialogs easier to read.</p>
+      </div>
+
+      <div className="settings-section">
         <div className="settings-label">WORLD</div>
         <div className="cutoff-row" role="radiogroup" aria-label="Theme">
           {Object.values(THEMES).map((t) => (

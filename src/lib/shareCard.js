@@ -153,6 +153,10 @@ export async function renderShareCard({ themeId, envState, name, streak, best, s
     const h = (sp.w * ih) / iw;
     ctx.drawImage(img, X(sp.x - sp.w / 2), Y(sp.y - h), X(sp.w), h * scale);
   };
+  for (const pl of extras.shelves?.portrait || []) {
+    const img = await loadImage(pl.src);
+    ctx.drawImage(img, X(pl.x), Y(pl.y), X(pl.w), pl.h * scale);
+  }
   for (const m of earned) {
     const sp = m.spots.portrait;
     if (m.flicker) {
