@@ -32,6 +32,7 @@ import GameView from './components/GameView';
 import LevelPlaque from './components/LevelPlaque';
 import { useTallyWallState } from './hooks/useTallyWallState';
 import { useEnvironmentState } from './hooks/useEnvironmentState';
+import { useReminders } from './hooks/useReminders';
 import { SoundFX } from './lib/sound';
 import { Music } from './lib/music';
 import { pickQuote } from './data/quotes';
@@ -75,6 +76,7 @@ export default function App() {
   // The active world's words: labels, ranks, quotes. Everything below the
   // provider reads them through useVoice().
   const voice = voiceFor(settings?.theme);
+  useReminders({ habits, completions, settings, words: voice.remind.words });
   const [quote, setQuote] = useState(() => pickQuote({ envState, currentStreak: stats.currentStreak }, voice.quotes));
 
   const markBtnRef = useRef(null);

@@ -132,6 +132,18 @@ const medieval = {
     saved: (t, r) => `SAVED ${t} TALLIES FROM ${r} ROUTINE${r === 1 ? '' : 'S'}`,
   },
 
+  remind: {
+    label: 'DAILY REMINDER',
+    help: 'One nudge a day at the hour you choose, and only if a quest is still open. Once your mark is made, the keep stays quiet.',
+    denied: 'NOTIFICATIONS ARE BLOCKED — ALLOW THEM IN YOUR PHONE’S SETTINGS',
+    webOnly: 'Reminders ring from the Android app. A browser tab cannot wake itself.',
+    words: {
+      title: 'TALLY WALL',
+      one: (name) => `${name} still waits for today’s mark.`,
+      many: (n) => `${n} quests still wait for today’s mark.`,
+    },
+  },
+
   day: {
     chronicle: 'THE CHRONICLE',
     perfect: 'A PERFECT DAY',
@@ -324,6 +336,18 @@ const neon = {
     retired: 'ARCHIVED MISSIONS',
     retiredHelp: 'Their logs are kept. Restore one to put it back in rotation.',
     saved: (t, r) => `SAVED ${t} LOGS FROM ${r} MISSION${r === 1 ? '' : 'S'}`,
+  },
+
+  remind: {
+    label: 'DAILY PING',
+    help: 'One ping a day at the time you set, and only if a mission is still pending. Log it and the channel goes quiet.',
+    denied: 'NOTIFICATIONS ARE BLOCKED — ALLOW THEM IN YOUR PHONE’S SETTINGS',
+    webOnly: 'Pings come from the Android app. A browser tab cannot wake itself.',
+    words: {
+      title: 'TALLY WALL',
+      one: (name) => `${name} is still pending today.`,
+      many: (n) => `${n} missions still pending today.`,
+    },
   },
 
   day: {

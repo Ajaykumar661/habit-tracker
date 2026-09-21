@@ -8,6 +8,8 @@ import { THEMES } from '../data/themes';
 import { Music } from '../lib/music';
 import { SoundFX } from '../lib/sound';
 import { useVoice } from '../hooks/useVoice';
+import { REMINDER_TIMES, formatReminderTime, reminderTimeOf } from '../domain/reminders';
+import { remindersAvailable, requestReminderPermission } from '../lib/reminders';
 
 const HOURS = Array.from(
   { length: MAX_CUTOFF_HOUR - MIN_CUTOFF_HOUR + 1 },
@@ -50,6 +52,7 @@ export default function SettingsSheet({
   const [musicOn, setMusicOn] = useState(() => Music.isOn());
   const [musicVol, setMusicVol] = useState(() => Music.getVolume());
   const [sfxVol, setSfxVol] = useState(() => SoundFX.getVolume());
+  const [remindNote, setRemindNote] = useState(null);
   const cutoff = settings?.dayCutoffHour ?? 0;
   const backup = backupStatus(habits, settings);
 
@@ -72,6 +75,17 @@ export default function SettingsSheet({
       setNote({ kind: 'ok', text: v.settings.saved(tallies, routines) });
     } catch (e) {
       setNote({ kind: 'err', text: e.message.toUpperCase() });
+    }
+  }
+
+  async function toggleReminder() {
+    if (settings?.reminderOn) { onSetSetting('reminderOn', false); return; }
+    // Permission is asked here, on the user's own tap -- never on launch.
+    if (await requestReminderPermission()) {
+      setRemindNote(null);
+      onSetSetting('reminderOn', true);
+    } else {
+      setRemindNote(v.remind.denied);
     }
   }
 
@@ -135,6 +149,37 @@ export default function SettingsSheet({
           onChange={(v) => { setMusicVol(v); Music.setVolume(v); }}
         />
       )}
+
+      <div className="settings-section">
+        <div className="settings-row settings-row-flush">
+          <span className="settings-label">{v.remind.label}</span>
+          <button
+            type="button"
+            className="pixel-btn pixel-btn-small"
+            onClick={toggleReminder}
+            disabled={!remindersAvailable()}
+            aria-pressed={!!settings?.reminderOn}
+          >
+            {settings?.reminderOn ? 'ON' : 'OFF'}
+          </button>
+        </div>
+        <p className="settings-help">
+          {remindersAvailable() ? v.remind.help : v.remind.webOnly}
+        </p>
+        {settings?.reminderOn && (
+          <label className="settings-time">
+            <span>AT</span>
+            <select
+              value={reminderTimeOf(settings)}
+              onChange={(e) => onSetSetting('reminderTime', e.target.value)}
+              aria-label="Reminder time"
+            >
+              {REMINDER_TIMES.map((t) => <option key={t} value={t}>{formatReminderTime(t)}</option>)}
+            </select>
+          </label>
+        )}
+        {remindNote && <p className="settings-note err">{remindNote}</p>}
+      </div>
 
       <div className="settings-section">
         <div className="settings-label">WORLD</div>

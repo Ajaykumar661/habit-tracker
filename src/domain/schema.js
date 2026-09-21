@@ -27,7 +27,12 @@ export const DEFAULT_SETTINGS = {
   // seen this" is not a fact the completion record could ever answer.
   seenGuide: false,
   theme: DEFAULT_THEME,
+  // One reminder a day, off until the user asks for it (domain/reminders.js).
+  reminderOn: false,
+  reminderTime: '20:00',
 };
+
+const REMINDER_TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export function makeId() {
   // Timestamp prefix keeps ids roughly sortable by creation, random suffix
@@ -200,6 +205,9 @@ export function normalizeState(state) {
       // A theme that no longer exists (or never did) falls back rather than
       // leaving the app with nothing to draw.
       theme: THEME_IDS.includes(state.settings?.theme) ? state.settings.theme : DEFAULT_THEME,
+      // A reminder must never switch itself on from a hand-edited file.
+      reminderOn: state.settings?.reminderOn === true,
+      reminderTime: REMINDER_TIME_RE.test(state.settings?.reminderTime) ? state.settings.reminderTime : DEFAULT_SETTINGS.reminderTime,
     },
   };
 }

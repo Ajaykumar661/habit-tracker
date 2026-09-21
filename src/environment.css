@@ -1032,6 +1032,33 @@
   margin: 14px 0 6px;
 }
 .settings-row .pixel-btn { display: inline-flex; align-items: center; gap: 6px; }
+.settings-row-flush { margin-top: 0; }
+.settings-row-flush .settings-label { margin: 0; }
+.settings-row .pixel-btn:disabled { opacity: 0.4; }
+/* the reminder hour: a carved slot, not a browser dropdown */
+.settings-time {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 8.5px;
+  color: var(--cream-dim);
+  letter-spacing: 1px;
+  margin: 0 0 6px;
+}
+.settings-time select {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--gold-text);
+  background: rgba(8, 6, 3, 0.7);
+  border: 2px solid var(--hud-wood-edge);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.settings-time select:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+.settings-time option { background: var(--panel); color: var(--cream); }
 /* ---- volume: a carved channel and a brass knob that shows what it moves */
 .vol-slider {
   --vol-track: rgba(8, 6, 3, 0.7);
